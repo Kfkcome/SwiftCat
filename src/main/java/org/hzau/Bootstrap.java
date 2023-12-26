@@ -44,6 +44,7 @@ public class Bootstrap {
         try {
             var parser = new DefaultParser();
             CommandLine cmd = parser.parse(options, args);
+
             warFile = cmd.getOptionValue("war");
             customConfigPath = cmd.getOptionValue("config");
         } catch (ParseException e) {
@@ -102,9 +103,14 @@ public class Bootstrap {
             }
         }
 
+//        Path classPath= Paths.get("D:\\java学习\\jerrymouse\\step-by-step\\hello-webapp\\target\\hello-webapp-1.0\\WEB-INF\\classes");
+//        Path libPath=Paths.get("D:\\java学习\\jerrymouse\\step-by-step\\hello-webapp\\target\\hello-webapp-1.0\\WEB-INF\\lib");
+
         // set classloader:
         var classLoader = new WebAppClassLoader(ps[0], ps[1]);
+//        var classLoader=new WebAppClassLoader(classPath,libPath);
         // scan class:
+
         Set<Class<?>> classSet = new HashSet<>();
 //        Consumer<Resource> handler = (r) -> {
 //            if (r.name().endsWith(".class")) {
@@ -224,7 +230,7 @@ public class Bootstrap {
             if (!entry.isDirectory()) {
                 Path file = extractPath.resolve(entry.getName());
                 Path dir = file.getParent();
-                if (!Files.isDirectory(dir)) {
+                if (!Files.isDirectory(dir)&&!Files.exists(dir)) {
                     try {
                         Files.createDirectories(dir);
                     } catch (IOException e) {
@@ -256,10 +262,15 @@ public class Bootstrap {
     }
 
     Path createExtractTo() throws IOException {
-        Path tmp = Files.createTempDirectory("_jm_");
+        Path tmp = Paths.get("./webapps/test-0");
+        int i=1;
+        while (Files.exists(tmp)){
+            tmp=Paths.get("./webapps/test-"+ i++);
+        }
+        Path finalTmp = tmp;
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
-                deleteDir(tmp);
+                deleteDir(finalTmp);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -276,6 +287,7 @@ public class Bootstrap {
                     Files.delete(c);
                 }
             } catch (IOException e) {
+                System.out.println(e.getMessage());
                 throw new UncheckedIOException(e);
             }
         });
