@@ -39,6 +39,7 @@ public class Bootstrap {
         String warFile = null;
         String customConfigPath = null;
         Options options = new Options();
+        //TODO:为什么只能用参数的形式来加载servlet
         options.addOption(Option.builder("w").longOpt("war").argName("file").hasArg().desc("specify war file.").required().build());
         options.addOption(Option.builder("c").longOpt("config").argName("file").hasArg().desc("specify external configuration file.").build());
         try {
@@ -103,49 +104,15 @@ public class Bootstrap {
             }
         }
 
-//        Path classPath= Paths.get("D:\\java学习\\jerrymouse\\step-by-step\\hello-webapp\\target\\hello-webapp-1.0\\WEB-INF\\classes");
-//        Path libPath=Paths.get("D:\\java学习\\jerrymouse\\step-by-step\\hello-webapp\\target\\hello-webapp-1.0\\WEB-INF\\lib");
-
         // set classloader:
         var classLoader = new WebAppClassLoader(ps[0], ps[1]);
-//        var classLoader=new WebAppClassLoader(classPath,libPath);
+
         // scan class:
-
         Set<Class<?>> classSet = new HashSet<>();
-//        Consumer<Resource> handler = (r) -> {
-//            if (r.name().endsWith(".class")) {
-//                String className = r.name().substring(0, r.name().length() - 6).replace('/', '.');
-//                if (className.endsWith("module-info") || className.endsWith("package-info")) {
-//                    return;
-//                }
-//                Class<?> clazz;
-//                try {
-//                    clazz = classLoader.loadClass(className);
-//                } catch (ClassNotFoundException e) {
-//                    logger.warn("load class '{}' failed: {}: {}", className, e.getClass().getSimpleName(), e.getMessage());
-//                    return;
-//                } catch (NoClassDefFoundError err) {
-//                    logger.error("load class '{}' failed: {}: {}", className, err.getClass().getSimpleName(), err.getMessage());
-//                    return;
-//                }
-//                if (clazz.isAnnotationPresent(WebServlet.class)) {
-//                    logger.info("Found @WebServlet: {}", clazz.getName());
-//                    classSet.add(clazz);
-//                }
-//                if (clazz.isAnnotationPresent(WebFilter.class)) {
-//                    logger.info("Found @WebFilter: {}", clazz.getName());
-//                    classSet.add(clazz);
-//                }
-//                if (clazz.isAnnotationPresent(WebListener.class)) {
-//                    logger.info("Found @WebListener: {}", clazz.getName());
-//                    classSet.add(clazz);
-//                }
-//            }
-//        };
-
         //-----------------------
-        Consumer<Resource> handler = (r) -> {
-            if (r.getName().endsWith(".class")) {
+        Consumer<Resource> handler = (r) -> {//定义一个Consumer<Resource>类型的handler 相当于一个函数
+            if (r.getName().endsWith(".class")) {//如果是class文件
+                //获取类名
                 String className = r.getName().substring(0, r.getName().length() - 6).replace('/', '.');
                 if (className.endsWith("module-info") || className.endsWith("package-info")) {
                     return;
@@ -160,15 +127,15 @@ public class Bootstrap {
                     logger.error("load class '{}' failed: {}: {}", className, err.getClass().getSimpleName(), err.getMessage());
                     return;
                 }
-                if (clazz.isAnnotationPresent(WebServlet.class)) {
+                if (clazz.isAnnotationPresent(WebServlet.class)) {//如果标记了WebServlet注解
                     logger.info("Found @WebServlet: {}", clazz.getName());
                     classSet.add(clazz);
                 }
-                if (clazz.isAnnotationPresent(WebFilter.class)) {
+                if (clazz.isAnnotationPresent(WebFilter.class)) {//如果标记了WebFilter注解
                     logger.info("Found @WebFilter: {}", clazz.getName());
                     classSet.add(clazz);
                 }
-                if (clazz.isAnnotationPresent(WebListener.class)) {
+                if (clazz.isAnnotationPresent(WebListener.class)) {//如果标记了WebListener注解
                     logger.info("Found @WebListener: {}", clazz.getName());
                     classSet.add(clazz);
                 }
@@ -192,15 +159,13 @@ public class Bootstrap {
 
         //----------------------------
 
-
+        //定义线程池大小 TODO:包装线程池使其遵循生命周期管理 用JMX监控线程池
         int threadPoolSize = config.server.threadPoolSize; // 假设这是您配置的线程池大小
         ExecutorService executor = Executors.newFixedThreadPool(threadPoolSize);
 
-        //----------------------------
-
-
+        //----------------------------启动从connector启动开始 TODO: connector的生命周期管理
         try (HttpConnector connector = new HttpConnector(config, webRoot, executor, classLoader, autoScannedClasses)) {
-            for (;;) {
+            for (; ; ) {
                 try {
                     Thread.sleep(1000);
                 } catch (InterruptedException e) {
@@ -210,7 +175,7 @@ public class Bootstrap {
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
         }
-        logger.info("jerrymouse http server was shutdown.");
+        logger.info("SwiftCat http server was shutdown.");
     }
 
     // return classes and lib path:
@@ -221,7 +186,7 @@ public class Bootstrap {
             Path libPath = warPath.resolve("WEB-INF/lib");
             Files.createDirectories(classesPath);
             Files.createDirectories(libPath);
-            return new Path[] { classesPath, libPath };
+            return new Path[]{classesPath, libPath};
         }
         Path extractPath = createExtractTo();
         logger.info("extract '{}' to '{}'", warPath, extractPath);
@@ -230,7 +195,7 @@ public class Bootstrap {
             if (!entry.isDirectory()) {
                 Path file = extractPath.resolve(entry.getName());
                 Path dir = file.getParent();
-                if (!Files.isDirectory(dir)&&!Files.exists(dir)) {
+                if (!Files.isDirectory(dir) && !Files.exists(dir)) {
                     try {
                         Files.createDirectories(dir);
                     } catch (IOException e) {
@@ -249,7 +214,7 @@ public class Bootstrap {
         Path libPath = extractPath.resolve("WEB-INF/lib");
         Files.createDirectories(classesPath);
         Files.createDirectories(libPath);
-        return new Path[] { classesPath, libPath };
+        return new Path[]{classesPath, libPath};
     }
 
     Path parseWarFile(String warFile) {
@@ -263,9 +228,9 @@ public class Bootstrap {
 
     Path createExtractTo() throws IOException {
         Path tmp = Paths.get("./webapps/test-0");
-        int i=1;
-        while (Files.exists(tmp)){
-            tmp=Paths.get("./webapps/test-"+ i++);
+        int i = 1;
+        while (Files.exists(tmp)) {
+            tmp = Paths.get("./webapps/test-" + i++);
         }
         Path finalTmp = tmp;
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {

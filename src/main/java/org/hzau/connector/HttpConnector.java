@@ -28,7 +28,7 @@ public class HttpConnector implements HttpHandler, AutoCloseable {
     final Duration stopDelay = Duration.ofSeconds(5);
 
     public HttpConnector(Config config, String webRoot, Executor executor, ClassLoader classLoader, List<Class<?>> autoScannedClasses) throws IOException {
-        logger.info("starting jerrymouse http server at {}:{}...", config.server.host, config.server.port);
+        logger.info("starting SwiftCat http server at {}:{}...", config.server.host, config.server.port);
         this.config = config;
         this.classLoader = classLoader;
 
@@ -39,12 +39,12 @@ public class HttpConnector implements HttpHandler, AutoCloseable {
         this.servletContext = ctx;
         Thread.currentThread().setContextClassLoader(null);
 
-        // start http server:
+        // start http server: TODO: 为什么要用sun的httpserver
         this.httpServer = HttpServer.create(new InetSocketAddress(config.server.host, config.server.port), config.server.backlog);
         this.httpServer.createContext("/", this);
         this.httpServer.setExecutor(executor);
-        this.httpServer.start();
-        logger.info("jerrymouse http server started at {}:{}...", config.server.host, config.server.port);
+        this.httpServer.start();//TODO:init和start分开
+        logger.info("SwiftCat http server started at {}:{}...", config.server.host, config.server.port);
     }
 
     @Override
@@ -61,6 +61,8 @@ public class HttpConnector implements HttpHandler, AutoCloseable {
         // process:
         try {
             Thread.currentThread().setContextClassLoader(this.classLoader);
+            //调用context模块的process方法 calling ContextImpl.process
+            //TODO: 为什么要用HttpHandler 为什么没有Host这一层
             this.servletContext.process(request, response);
         } catch (Exception e) {
             logger.error(e.getMessage(), e);

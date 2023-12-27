@@ -28,6 +28,8 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.stream.Collectors;
 
+
+//TODO:为什么没有被JMX管理和生命周期管理
 public class ServletContextImpl implements ServletContext {
 
     final Logger logger = LoggerFactory.getLogger(getClass());
@@ -71,6 +73,7 @@ public class ServletContextImpl implements ServletContext {
         logger.info("set web root: {}", this.webRoot);
     }
 
+    //TODO:为什么没有责任链
     public void process(HttpServletRequest request, HttpServletResponse response) throws IOException {
         String path = request.getRequestURI();
         // search servlet:
