@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -40,12 +41,12 @@ public class Bootstrap {
         String customConfigPath = null;
         Options options = new Options();
         //TODO:为什么只能用参数的形式来加载servlet
+        //TODO:为什么只能加载war包，而不是目录文件
         options.addOption(Option.builder("w").longOpt("war").argName("file").hasArg().desc("specify war file.").required().build());
         options.addOption(Option.builder("c").longOpt("config").argName("file").hasArg().desc("specify external configuration file.").build());
         try {
             var parser = new DefaultParser();
             CommandLine cmd = parser.parse(options, args);
-
             warFile = cmd.getOptionValue("war");
             customConfigPath = cmd.getOptionValue("config");
         } catch (ParseException e) {
@@ -108,6 +109,7 @@ public class Bootstrap {
         var classLoader = new WebAppClassLoader(ps[0], ps[1]);
 
         // scan class:
+        //TODO: 修复一次加载出来所有类的问题 应该动态的按需加载
         Set<Class<?>> classSet = new HashSet<>();
         //-----------------------
         Consumer<Resource> handler = (r) -> {//定义一个Consumer<Resource>类型的handler 相当于一个函数
@@ -164,6 +166,7 @@ public class Bootstrap {
         ExecutorService executor = Executors.newFixedThreadPool(threadPoolSize);
 
         //----------------------------启动从connector启动开始 TODO: connector的生命周期管理
+        //TODO: 应该配置几个Connector就主注册几个 Connector 而不是只注册一个
         try (HttpConnector connector = new HttpConnector(config, webRoot, executor, classLoader, autoScannedClasses)) {
             for (; ; ) {
                 try {
@@ -188,7 +191,7 @@ public class Bootstrap {
             Files.createDirectories(libPath);
             return new Path[]{classesPath, libPath};
         }
-        Path extractPath = createExtractTo();
+        Path extractPath = createExtractTo(warPath.getFileName().toString());
         logger.info("extract '{}' to '{}'", warPath, extractPath);
         JarFile war = new JarFile(warPath.toFile());
         war.stream().sorted((e1, e2) -> e1.getName().compareTo(e2.getName())).forEach(entry -> {
@@ -203,7 +206,7 @@ public class Bootstrap {
                     }
                 }
                 try (InputStream in = war.getInputStream(entry)) {
-                    Files.copy(in, file);
+                    Files.copy(in, file, StandardCopyOption.REPLACE_EXISTING);
                 } catch (IOException e) {
                     throw new UncheckedIOException(e);
                 }
@@ -226,16 +229,11 @@ public class Bootstrap {
         return warPath;
     }
 
-    Path createExtractTo() throws IOException {
-        Path tmp = Paths.get("./webapps/test-0");
-        int i = 1;
-        while (Files.exists(tmp)) {
-            tmp = Paths.get("./webapps/test-" + i++);
-        }
-        Path finalTmp = tmp;
+    Path createExtractTo(String warPackageName) throws IOException {
+        Path tmp = Paths.get("./webapps/"+warPackageName.split("\\.")[0]);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
-                deleteDir(finalTmp);
+                deleteDir(tmp);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -244,7 +242,8 @@ public class Bootstrap {
     }
 
     void deleteDir(Path p) throws IOException {
-        Files.list(p).forEach(c -> {
+        Files.list(p).forEach(c -> {//FIXME:为什么项目的lib目录下的文件删除不掉
+            /// error: .\webapps\hello-webapp-1\WEB-INF\lib\logback-classic-1.4.6.jar: 另一个程序正在使用此文件，进程无法访问
             try {
                 if (Files.isDirectory(c)) {
                     deleteDir(c);
@@ -260,7 +259,7 @@ public class Bootstrap {
     }
 
     Config loadConfig(String config) throws JacksonException {
-        var objectMapper = new ObjectMapper(new YAMLFactory()).setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE)
+        ObjectMapper objectMapper = new ObjectMapper(new YAMLFactory()).setPropertyNamingStrategy(PropertyNamingStrategies.KEBAB_CASE)
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         return objectMapper.readValue(config, Config.class);
     }

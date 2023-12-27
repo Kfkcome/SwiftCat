@@ -34,8 +34,10 @@ public class HttpConnector implements HttpHandler, AutoCloseable {
 
         // init servlet context:
         Thread.currentThread().setContextClassLoader(this.classLoader);
+        //TODO:为什么只能注册一个Context 应该配置几个context然后注册几个context
+        // 并且如果不是放在一个目录的servlet应该注册为不同Context 意思就是一个webapp目录一个context
         ServletContextImpl ctx = new ServletContextImpl(classLoader, config, webRoot);
-        ctx.initialize(autoScannedClasses);
+        ctx.initialize(autoScannedClasses);//TODO:为什么初始化的时候就注册servlet
         this.servletContext = ctx;
         Thread.currentThread().setContextClassLoader(null);
 

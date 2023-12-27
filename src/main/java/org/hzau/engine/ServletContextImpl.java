@@ -102,7 +102,7 @@ public class ServletContextImpl implements ServletContext {
         }
         Filter[] filters = enabledFilters.toArray(Filter[]::new);
         logger.atDebug().log("process {} by filter {}, servlet {}", path, Arrays.toString(filters), servlet);
-        FilterChain chain = new FilterChainImpl(filters, servlet);
+        FilterChain chain = new FilterChainImpl(filters, servlet);//调用servlet
 
         try {
             this.invokeServletRequestInitialized(request);
@@ -792,7 +792,7 @@ public class ServletContextImpl implements ServletContext {
 
         this.invokeServletContextInitialized();
 
-        // register @WebServlet and @WebFilter:
+        // register @WebServlet and @WebFilter: 注册servlet
         for (Class<?> c : autoScannedClasses) {
             WebServlet ws = c.getAnnotation(WebServlet.class);
             if (ws != null) {
