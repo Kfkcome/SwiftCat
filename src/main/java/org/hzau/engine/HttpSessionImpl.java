@@ -9,7 +9,7 @@ import java.util.Enumeration;
 
 public class HttpSessionImpl implements HttpSession {
 
-    final ServletContextImpl servletContext;
+    final NormalContext servletContext;
 
     String sessionId;
     int maxInactiveInterval;
@@ -17,7 +17,7 @@ public class HttpSessionImpl implements HttpSession {
     long lastAccessedTime;
     Attributes attributes;
 
-    public HttpSessionImpl(ServletContextImpl servletContext, String sessionId, int interval) {
+    public HttpSessionImpl(NormalContext servletContext, String sessionId, int interval) {
         this.servletContext = servletContext;
         this.sessionId = sessionId;
         this.creationTime = this.lastAccessedTime = System.currentTimeMillis();

@@ -7,7 +7,8 @@ import com.sun.net.httpserver.HttpServer;
 import org.hzau.Config;
 import org.hzau.engine.HttpServletRequestImpl;
 import org.hzau.engine.HttpServletResponseImpl;
-import org.hzau.engine.ServletContextImpl;
+import org.hzau.engine.NormalContext;
+import org.hzau.engine.lifecycle.LifecycleException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +24,7 @@ public class HttpConnector implements HttpHandler, AutoCloseable {
 
     final Config config;
     final ClassLoader classLoader;
-    final ServletContextImpl servletContext;
+    final NormalContext servletContext;
     final HttpServer httpServer;
     final Duration stopDelay = Duration.ofSeconds(5);
 
@@ -36,8 +37,14 @@ public class HttpConnector implements HttpHandler, AutoCloseable {
         Thread.currentThread().setContextClassLoader(this.classLoader);
         //TODO:为什么只能注册一个Context 应该配置几个context然后注册几个context
         // 并且如果不是放在一个目录的servlet应该注册为不同Context 意思就是一个webapp目录一个context
-        ServletContextImpl ctx = new ServletContextImpl(classLoader, config, webRoot);
-        ctx.initialize(autoScannedClasses);//TODO:为什么初始化的时候就注册servlet
+        NormalContext ctx=null;
+        try {
+            ctx = new NormalContext(classLoader, config, webRoot,autoScannedClasses);
+            ctx.init();//TODO:为什么初始化的时候就注册servlet
+            ctx.start();
+        } catch (LifecycleException e) {
+            throw new RuntimeException(e);//TODO:处理加载context加载异常
+        }
         this.servletContext = ctx;
         Thread.currentThread().setContextClassLoader(null);
 
@@ -51,7 +58,11 @@ public class HttpConnector implements HttpHandler, AutoCloseable {
 
     @Override
     public void close() {
-        this.servletContext.destroy();
+        try {
+            this.servletContext.destroy();
+        } catch (LifecycleException e) {
+            throw new RuntimeException(e);
+        }
         this.httpServer.stop((int) this.stopDelay.toSeconds());
     }
 

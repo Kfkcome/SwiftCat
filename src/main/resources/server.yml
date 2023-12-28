@@ -9,8 +9,10 @@ server:
   thread-pool-size: 200
   enable-virtual-thread: false
 
-  # default one and only one web app:
-  web-app:
+# 定义上下文
+# TODO:应该在context之前有host层和engine层
+# Engin层的作用：Engine容器在收到请求之后，会按照虚拟主机的配置将请求映射到对应的Host容器之上。也就是说是多个host的前提
+  context:
     name: SwiftCat Webapp
     file-listings: true
     virtual-server-name: localhost

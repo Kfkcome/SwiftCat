@@ -8,6 +8,9 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.descriptor.JspConfigDescriptor;
 import jakarta.servlet.http.*;
 import org.hzau.Config;
+import org.hzau.engine.lifecycle.LifecycleException;
+import org.hzau.engine.lifecycle.LifecycleMBeanBase;
+import org.hzau.engine.lifecycle.LifecycleState;
 import org.hzau.engine.mapping.FilterMapping;
 import org.hzau.engine.mapping.ServletMapping;
 import org.hzau.engine.servlet.DefaultServlet;
@@ -30,7 +33,7 @@ import java.util.stream.Collectors;
 
 
 //TODO:为什么没有被JMX管理和生命周期管理
-public class ServletContextImpl implements ServletContext {
+public class NormalContext extends LifecycleMBeanBase implements ServletContext {
 
     final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -46,6 +49,8 @@ public class ServletContextImpl implements ServletContext {
     // servlet context attributes:
     private Attributes attributes = new Attributes(true);
     private SessionCookieConfig sessionCookieConfig;
+
+    private List<Class<?>> autoScannedClasses;
 
     private Map<String, ServletRegistrationImpl> servletRegistrations = new HashMap<>();
     private Map<String, FilterRegistrationImpl> filterRegistrations = new HashMap<>();
@@ -64,13 +69,16 @@ public class ServletContextImpl implements ServletContext {
     private List<HttpSessionAttributeListener> httpSessionAttributeListeners = null;
     private List<HttpSessionListener> httpSessionListeners = null;
 
-    public ServletContextImpl(ClassLoader classLoader, Config config, String webRoot) {
+    public NormalContext(ClassLoader classLoader, Config config, String webRoot, List<Class<?>> autoScannedClasses) throws LifecycleException {
+
         this.classLoader = classLoader;
         this.config = config;
         this.sessionCookieConfig = new SessionCookieConfigImpl(config);
         this.webRoot = Paths.get(webRoot).normalize().toAbsolutePath();
-        this.sessionManager = new SessionManager(this, config.server.webApp.sessionTimeout);
+        this.autoScannedClasses = autoScannedClasses;
+        this.sessionManager = new SessionManager(this, config.server.context.sessionTimeout);
         logger.info("set web root: {}", this.webRoot);
+
     }
 
     //TODO:为什么没有责任链
@@ -428,7 +436,7 @@ public class ServletContextImpl implements ServletContext {
 
     @Override
     public String getServletContextName() {
-        return this.config.server.webApp.name;
+        return this.config.server.context.name;
     }
 
     @Override
@@ -717,18 +725,18 @@ public class ServletContextImpl implements ServletContext {
 
     @Override
     public String getVirtualServerName() {
-        return this.config.server.webApp.virtualServerName;
+        return this.config.server.context.virtualServerName;
     }
 
     @Override
     public int getSessionTimeout() {
-        return this.config.server.webApp.sessionTimeout;
+        return this.config.server.context.sessionTimeout;
     }
 
     @Override
     public void setSessionTimeout(int sessionTimeout) {
         checkNotInitialized("setSessionTimeout");
-        this.config.server.webApp.sessionTimeout = sessionTimeout;
+        this.config.server.context.sessionTimeout = sessionTimeout;
     }
 
     @Override
@@ -775,7 +783,9 @@ public class ServletContextImpl implements ServletContext {
         return 0;
     }
 
-    public void initialize(List<Class<?>> autoScannedClasses) {
+    @Override
+    public void initInternal() throws LifecycleException {
+        super.initInternal();
         if (this.initialized) {
             throw new IllegalStateException("Cannot re-initialize.");
         }
@@ -792,6 +802,11 @@ public class ServletContextImpl implements ServletContext {
 
         this.invokeServletContextInitialized();
 
+    }
+
+    @Override
+    protected void startInternal() throws LifecycleException {
+        setState(LifecycleState.STARTING);
         // register @WebServlet and @WebFilter: 注册servlet
         for (Class<?> c : autoScannedClasses) {
             WebServlet ws = c.getAnnotation(WebServlet.class);
@@ -837,7 +852,7 @@ public class ServletContextImpl implements ServletContext {
                 logger.error("init servlet failed: " + name + " / " + registration.servlet.getClass().getName(), e);
             }
         }
-        if (defaultServlet == null && config.server.webApp.fileListings) {
+        if (defaultServlet == null && config.server.context.fileListings) {
             logger.info("no default servlet. auto register {}...", DefaultServlet.class.getName());
             defaultServlet = new DefaultServlet();
             try {
@@ -849,7 +864,7 @@ public class ServletContextImpl implements ServletContext {
 
                     @Override
                     public ServletContext getServletContext() {
-                        return ServletContextImpl.this;
+                        return NormalContext.this;
                     }
 
                     @Override
@@ -893,11 +908,17 @@ public class ServletContextImpl implements ServletContext {
             }
             return cmp;
         });
-
         this.initialized = true;
     }
 
-    public void destroy() {
+    @Override
+    protected void stopInternal() throws LifecycleException {
+
+    }
+
+
+    @Override
+    public void destroyInternal() throws LifecycleException {
         // destroy filter and servlet:
         this.filterMappings.forEach(mapping -> {
             try {
@@ -914,12 +935,13 @@ public class ServletContextImpl implements ServletContext {
                 logger.error("destroy servlet '" + mapping.servlet + "' failed.", e);
             }
         });
-
         // notify:
         this.invokeServletContextDestroyed();
+        super.destroyInternal();
     }
 
     private void checkNotInitialized(String name) {
+        //TODO:应该舍弃此方法 而使用lifecycle方法
         if (this.initialized) {
             throw new IllegalStateException("Cannot call " + name + " after initialization.");
         }
@@ -943,5 +965,17 @@ public class ServletContextImpl implements ServletContext {
         } catch (ReflectiveOperationException e) {
             throw new ServletException("Cannot instantiate class " + clazz.getName(), e);
         }
+    }
+
+    @Override
+    protected String getDomainInternal() {
+        //TODO:完成JMX管理
+        return null;
+    }
+
+    @Override
+    protected String getObjectNameKeyProperties() {
+        ////TODO:完成JMX管理
+        return null;
     }
 }

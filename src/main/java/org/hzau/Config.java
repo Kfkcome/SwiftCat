@@ -17,7 +17,7 @@ public class Config {
         public int threadPoolSize;
         public boolean enableVirtualThread;
         public Map<String, String> mimeTypes;
-        public WebApp webApp;
+        public Context context;
         public ForwardedHeaders forwardedHeaders;
 
         public String getMimeType(String url) {
@@ -29,7 +29,7 @@ public class Config {
             return this.mimeTypes.getOrDefault(ext, this.mimeDefault);
         }
 
-        public static class WebApp {
+        public static class Context {//一个上下文
             public String name;
             public boolean fileListings;
             public String virtualServerName;

@@ -18,7 +18,7 @@ import java.util.*;
 public class HttpServletRequestImpl implements HttpServletRequest {
 
     final Config config;
-    final ServletContextImpl servletContext;
+    final NormalContext servletContext;
     final HttpExchangeRequest exchangeRequest;
     final HttpServletResponse response;
     final String method;
@@ -33,7 +33,7 @@ public class HttpServletRequestImpl implements HttpServletRequest {
 
     Boolean inputCalled = null;
 
-    public HttpServletRequestImpl(Config config, ServletContextImpl servletContext, HttpExchangeRequest exchangeRequest, HttpServletResponse response) {
+    public HttpServletRequestImpl(Config config, NormalContext servletContext, HttpExchangeRequest exchangeRequest, HttpServletResponse response) {
         this.config = config;
         this.servletContext = servletContext;
         this.exchangeRequest = exchangeRequest;
@@ -320,7 +320,7 @@ public class HttpServletRequestImpl implements HttpServletRequest {
         Cookie[] cookies = getCookies();
         if (cookies != null) {
             for (Cookie cookie : cookies) {
-                if (config.server.webApp.sessionCookieName.equals(cookie.getName())) {
+                if (config.server.context.sessionCookieName.equals(cookie.getName())) {
                     sessionId = cookie.getValue();
                     break;
                 }
@@ -335,7 +335,7 @@ public class HttpServletRequestImpl implements HttpServletRequest {
             }
             sessionId = UUID.randomUUID().toString();
             // set cookie:
-            String cookieValue = config.server.webApp.sessionCookieName + "=" + sessionId + "; Path=/; SameSite=Strict; HttpOnly";
+            String cookieValue = config.server.context.sessionCookieName + "=" + sessionId + "; Path=/; SameSite=Strict; HttpOnly";
             this.response.addHeader("Set-Cookie", cookieValue);
         }
         return this.servletContext.sessionManager.getSession(sessionId);

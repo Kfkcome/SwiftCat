@@ -20,17 +20,17 @@ public class SessionCookieConfigImpl implements SessionCookieConfig {
 
     public SessionCookieConfigImpl(Config config) {
         this.config = config;
-        this.maxAge = config.server.webApp.sessionTimeout * 60;
+        this.maxAge = config.server.context.sessionTimeout * 60;
     }
 
     @Override
     public void setName(String name) {
-        this.config.server.webApp.sessionCookieName = name;
+        this.config.server.context.sessionCookieName = name;
     }
 
     @Override
     public String getName() {
-        return this.config.server.webApp.sessionCookieName;
+        return this.config.server.context.sessionCookieName;
     }
 
     @Override

@@ -13,11 +13,11 @@ public class SessionManager implements Runnable {
 
     final Logger logger = LoggerFactory.getLogger(getClass());
 
-    final ServletContextImpl servletContext;
+    final NormalContext servletContext;
     final Map<String, HttpSessionImpl> sessions = new ConcurrentHashMap<>();
     final int inactiveInterval;
 
-    public SessionManager(ServletContextImpl servletContext, int interval) {
+    public SessionManager(NormalContext servletContext, int interval) {
         this.servletContext = servletContext;
         this.inactiveInterval = interval;
         Thread t = new Thread(this, "Session-Cleanup-Thread");
