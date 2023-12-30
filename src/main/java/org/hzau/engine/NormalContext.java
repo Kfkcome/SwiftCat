@@ -32,7 +32,13 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 
-//TODO:为什么没有被JMX管理和生命周期管理
+/**
+ * 类功能描述：context模块的标准实现
+ *
+ * TODO:为什么没有被JMX管理和生命周期管理
+ * @author kfk
+ * @date 2023/12/28
+ */
 public class NormalContext extends LifecycleMBeanBase implements ServletContext {
 
     final Logger logger = LoggerFactory.getLogger(getClass());
@@ -128,6 +134,12 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
 
     // invoke listeners ///////////////////////////////////////////////////////
 
+    /**
+     * 功能描述：
+     *
+     * @author kfk
+     * @date 2023/12/29
+     */
     void invokeServletContextInitialized() {
         logger.debug("invoke ServletContextInitialized: {}", this);
         if (this.servletContextListeners != null) {

@@ -17,6 +17,7 @@
 package org.hzau.engine.lifecycle;
 
 
+import org.hzau.engine.mbeans.StandardRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -143,7 +144,7 @@ public abstract class LifecycleMBeanBase extends LifecycleBase
 
         try {
             on = new ObjectName(name.toString());
-            Registry.getRegistry().registerComponent(obj, on);
+            StandardRegistry.getRegistry().registerComponent(obj, on);
         } catch (Exception e) {
             log.warn("lifecycleMBeanBase.registerFail" + obj + name + e);
         }
@@ -168,7 +169,7 @@ public abstract class LifecycleMBeanBase extends LifecycleBase
         StringBuilder name = new StringBuilder(getDomain());
         name.append(':');
         name.append(objectNameKeyProperties);
-        Registry.getRegistry().unregisterComponent(name.toString());
+        StandardRegistry.getRegistry().unregisterComponent(name.toString());
     }
 
 
@@ -182,7 +183,7 @@ public abstract class LifecycleMBeanBase extends LifecycleBase
      * @param on The name of the component to unregister
      */
     protected final void unregister(ObjectName on) {
-        Registry.getRegistry().unregisterComponent(on.toString());
+        StandardRegistry.getRegistry().unregisterComponent(on.toString());
     }
 
 
