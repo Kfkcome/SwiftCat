@@ -6,6 +6,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import org.hzau.Config;
 import org.hzau.connector.HttpExchangeResponse;
+import org.hzau.connector.MappingData;
 import org.hzau.engine.support.HttpHeaders;
 
 import java.io.IOException;

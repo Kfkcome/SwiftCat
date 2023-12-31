@@ -1,5 +1,6 @@
 package org.hzau;
 
+import java.util.List;
 import java.util.Map;
 
 public class Config {
@@ -17,7 +18,7 @@ public class Config {
         public int threadPoolSize;
         public boolean enableVirtualThread;
         public Map<String, String> mimeTypes;
-        public Context context;
+        public List<Context> contexts;
         public ForwardedHeaders forwardedHeaders;
 
         public String getMimeType(String url) {
@@ -31,6 +32,7 @@ public class Config {
 
         public static class Context {//一个上下文
             public String name;
+            public String path;
             public boolean fileListings;
             public String virtualServerName;
             public String sessionCookieName;

@@ -5,6 +5,7 @@ import jakarta.servlet.*;
 import jakarta.servlet.http.*;
 import org.hzau.Config;
 import org.hzau.connector.HttpExchangeRequest;
+import org.hzau.connector.MappingData;
 import org.hzau.engine.support.Attributes;
 import org.hzau.engine.support.HttpHeaders;
 import org.hzau.engine.support.Parameters;
@@ -18,7 +19,7 @@ import java.util.*;
 public class HttpServletRequestImpl implements HttpServletRequest {
 
     final Config config;
-    final NormalContext servletContext;
+    public final MappingData mappingData=new MappingData();
     final HttpExchangeRequest exchangeRequest;
     final HttpServletResponse response;
     final String method;
@@ -33,12 +34,10 @@ public class HttpServletRequestImpl implements HttpServletRequest {
 
     Boolean inputCalled = null;
 
-    public HttpServletRequestImpl(Config config, NormalContext servletContext, HttpExchangeRequest exchangeRequest, HttpServletResponse response) {
+    public HttpServletRequestImpl(Config config, HttpExchangeRequest exchangeRequest, HttpServletResponse response) {
         this.config = config;
-        this.servletContext = servletContext;
         this.exchangeRequest = exchangeRequest;
         this.response = response;
-
         this.characterEncoding = config.server.requestEncoding;
         this.method = exchangeRequest.getRequestMethod();
         this.headers = new HttpHeaders(exchangeRequest.getRequestHeaders());
@@ -184,7 +183,7 @@ public class HttpServletRequestImpl implements HttpServletRequest {
 
     @Override
     public ServletContext getServletContext() {
-        return this.servletContext;
+        return this.mappingData.context;
     }
 
     @Override
@@ -260,13 +259,13 @@ public class HttpServletRequestImpl implements HttpServletRequest {
 
     @Override
     public String getPathTranslated() {
-        return this.servletContext.getRealPath(getRequestURI());
+        return this.mappingData.context.getRealPath(getRequestURI());
     }
 
     @Override
     public String getContextPath() {
-        // root context path:
-        return "";
+        // root contexts path:
+        return this.mappingData.context.getContextPath();
     }
 
     @Override
@@ -320,7 +319,7 @@ public class HttpServletRequestImpl implements HttpServletRequest {
         Cookie[] cookies = getCookies();
         if (cookies != null) {
             for (Cookie cookie : cookies) {
-                if (config.server.context.sessionCookieName.equals(cookie.getName())) {
+                if (config.server.contexts.get(0).sessionCookieName.equals(cookie.getName())) {
                     sessionId = cookie.getValue();
                     break;
                 }
@@ -335,10 +334,10 @@ public class HttpServletRequestImpl implements HttpServletRequest {
             }
             sessionId = UUID.randomUUID().toString();
             // set cookie:
-            String cookieValue = config.server.context.sessionCookieName + "=" + sessionId + "; Path=/; SameSite=Strict; HttpOnly";
+            String cookieValue = config.server.contexts.get(0).sessionCookieName + "=" + sessionId + "; Path=/; SameSite=Strict; HttpOnly";
             this.response.addHeader("Set-Cookie", cookieValue);
         }
-        return this.servletContext.sessionManager.getSession(sessionId);
+        return this.mappingData.context.sessionManager.getSession(sessionId);
     }
 
     @Override
@@ -450,9 +449,9 @@ public class HttpServletRequestImpl implements HttpServletRequest {
         } else {
             Object oldValue = this.attributes.setAttribute(name, value);
             if (oldValue == null) {
-                this.servletContext.invokeServletRequestAttributeAdded(this, name, value);
+                this.mappingData.context.invokeServletRequestAttributeAdded(this, name, value);
             } else {
-                this.servletContext.invokeServletRequestAttributeReplaced(this, name, value);
+                this.mappingData.context.invokeServletRequestAttributeReplaced(this, name, value);
             }
         }
     }
@@ -460,7 +459,7 @@ public class HttpServletRequestImpl implements HttpServletRequest {
     @Override
     public void removeAttribute(String name) {
         Object oldValue = this.attributes.removeAttribute(name);
-        this.servletContext.invokeServletRequestAttributeRemoved(this, name, oldValue);
+        this.mappingData.context.invokeServletRequestAttributeRemoved(this, name, oldValue);
     }
 
     // address and port ///////////////////////////////////////////////////////

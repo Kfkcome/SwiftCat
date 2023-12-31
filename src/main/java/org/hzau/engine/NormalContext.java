@@ -43,6 +43,12 @@ import java.util.stream.Collectors;
  */
 public class NormalContext extends LifecycleMBeanBase implements ServletContext {
 
+    private final String name;
+    private final String path;
+    private final boolean fileListings;
+    private final String virtualServerName;
+    private final String sessionCookieName;
+    private final Integer sessionTimeout;
     final Logger logger = LoggerFactory.getLogger(getClass());
 
     final ClassLoader classLoader;
@@ -54,7 +60,7 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
 
     private boolean initialized = false;
 
-    // servlet context attributes:
+    // servlet contexts attributes:
     private Attributes attributes = new Attributes(true);
     private SessionCookieConfig sessionCookieConfig;
 
@@ -77,14 +83,20 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
     private List<HttpSessionAttributeListener> httpSessionAttributeListeners = null;
     private List<HttpSessionListener> httpSessionListeners = null;
 
-    public NormalContext(ClassLoader classLoader, Config config, String webRoot, List<Class<?>> autoScannedClasses) throws LifecycleException {
+    public NormalContext(String name,String path ,boolean fileListings, String virtualServerName, String sessionCookieName, Integer sessionTimeout, ClassLoader classLoader, Config config, String webRoot, List<Class<?>> autoScannedClasses) throws LifecycleException {
+        this.name = name;
+        this.path=path;
+        this.fileListings = fileListings;
+        this.virtualServerName = virtualServerName;
+        this.sessionCookieName = sessionCookieName;
+        this.sessionTimeout = sessionTimeout;
 
         this.classLoader = classLoader;
         this.config = config;
         this.sessionCookieConfig = new SessionCookieConfigImpl(config);
         this.webRoot = Paths.get(webRoot).normalize().toAbsolutePath();
         this.autoScannedClasses = autoScannedClasses;
-        this.sessionManager = new SessionManager(this, config.server.context.sessionTimeout);
+        this.sessionManager = new SessionManager(this, config.server.contexts.get(0).sessionTimeout);
         logger.info("set web root: {}", this.webRoot);
 
     }
@@ -96,7 +108,7 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
         Servlet servlet = this.defaultServlet;
         if (!"/".equals(path)) {
             for (ServletMapping mapping : this.servletMappings) {
-                if (mapping.matches(path)) {
+                if (mapping.matches("/"+path.split("/")[2])) {//TODO:应该在MappingData中就匹配好
                     servlet = mapping.servlet;
                     break;
                 }
@@ -294,8 +306,8 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
 
     @Override
     public String getContextPath() {
-        // only support root context path:
-        return "";
+        // only support root contexts path:
+        return path;
     }
 
     @Override
@@ -450,7 +462,7 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
 
     @Override
     public String getServletContextName() {
-        return this.config.server.context.name;
+        return this.config.server.contexts.get(0).name;
     }
 
     @Override
@@ -739,18 +751,18 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
 
     @Override
     public String getVirtualServerName() {
-        return this.config.server.context.virtualServerName;
+        return this.config.server.contexts.get(0).virtualServerName;
     }
 
     @Override
     public int getSessionTimeout() {
-        return this.config.server.context.sessionTimeout;
+        return this.config.server.contexts.get(0).sessionTimeout;
     }
 
     @Override
     public void setSessionTimeout(int sessionTimeout) {
         checkNotInitialized("setSessionTimeout");
-        this.config.server.context.sessionTimeout = sessionTimeout;
+        this.config.server.contexts.get(0).sessionTimeout = sessionTimeout;
     }
 
     @Override
@@ -866,7 +878,7 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
                 logger.error("init servlet failed: " + name + " / " + registration.servlet.getClass().getName(), e);
             }
         }
-        if (defaultServlet == null && config.server.context.fileListings) {
+        if (defaultServlet == null && config.server.contexts.get(0).fileListings) {
             logger.info("no default servlet. auto register {}...", DefaultServlet.class.getName());
             defaultServlet = new DefaultServlet();
             try {
@@ -990,6 +1002,6 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
     @Override
     protected String getObjectNameKeyProperties() {
         //TODO:如何设计ObjectName？
-        return "type=Context,name=" + this.config.server.context.name + ",host=" + this.config.server.context.virtualServerName + ",version=1.0.0";
+        return "type=Context,name=" + this.config.server.contexts.get(0).name + ",host=" + this.config.server.contexts.get(0).virtualServerName + ",version=1.0.0";
     }
 }
