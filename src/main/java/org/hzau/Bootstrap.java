@@ -17,6 +17,7 @@ import org.hzau.utils.ClassPathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
@@ -39,28 +40,31 @@ public class Bootstrap {
     public static void main(String[] args) throws Exception {
         String warFile = null;
         String customConfigPath = null;
-        Options options = new Options();
-        //TODO:为什么只能用参数的形式来加载servlet
+
+
         //TODO:为什么只能加载war包，而不是目录文件
-        options.addOption(Option.builder("w").longOpt("war").argName("file").hasArg().desc("specify war file.").required().build());
-        options.addOption(Option.builder("c").longOpt("config").argName("file").hasArg().desc("specify external configuration file.").build());
-        try {
-            var parser = new DefaultParser();
-            CommandLine cmd = parser.parse(options, args);
-            warFile = cmd.getOptionValue("war");
-            customConfigPath = cmd.getOptionValue("config");
-        } catch (ParseException e) {
-            System.err.println(e.getMessage());
-            var help = new HelpFormatter();
-            var jarname = Path.of(Bootstrap.class.getProtectionDomain().getCodeSource().getLocation().toURI()).getFileName().toString();
-            help.printHelp("java -jar " + jarname + " [options]", options);
-            System.exit(1);
-            return;
+        //TODO:添加host层使得可以配置多个webapps目录 比如webapps1 webapps2
+        File file=new File("./webapps");
+        if (!file.exists()) {
+            file.mkdir();
+        }
+        for (File listFile : file.listFiles()) {
+
+            //TODO:实现可以配置context的docBase也就是servlet所在的目录 也就是webapps/the value of docBase
+            //TODO:并且如果不在yml中配置的话 也能使用默认配置 将webapps下所有servlet都注册
+            String[] split = listFile.getName().split("\\.");
+            if(listFile.isFile()&&split[split.length-1].equals("war")){
+                warFile=listFile.getAbsolutePath();
+            }
+            else{
+                //TODO:处理目录文件
+            }
         }
         new Bootstrap().start(warFile, customConfigPath);
     }
 
     public void start(String warFile, String customConfigPath) throws IOException {
+        //TODO:为什么每次只能加载一个war包
         Path warPath = parseWarFile(warFile);
 
         // extract war if necessary:
