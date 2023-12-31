@@ -92,6 +92,12 @@ public class HttpConnector implements HttpHandler, AutoCloseable {
                 break;
             }
         }
+
+        if (request.mappingData.context==null){
+            logger.error("找不到对应的url");
+            response.sendError(404);
+            return;
+        }
         // process:
         try {
             Thread.currentThread().setContextClassLoader(this.classLoader);
