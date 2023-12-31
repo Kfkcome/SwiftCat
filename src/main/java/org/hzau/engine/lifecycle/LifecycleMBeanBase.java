@@ -146,7 +146,7 @@ public abstract class LifecycleMBeanBase extends LifecycleBase
             on = new ObjectName(name.toString());
             StandardRegistry.getRegistry().registerComponent(obj, on);
         } catch (Exception e) {
-            log.warn("lifecycleMBeanBase.registerFail" + obj + name + e);
+            log.error("lifecycleMBeanBase.registerFail" + obj + name + e);
         }
 
         return on;

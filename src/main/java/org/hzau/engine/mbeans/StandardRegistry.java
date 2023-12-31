@@ -28,7 +28,7 @@ public class StandardRegistry {
         InputStream stream = null;
         try {
             //TODO:改变配置文件位置
-            stream = new FileInputStream("mbeans-descriptors.xml");
+            stream = new FileInputStream("src/main/java/org/hzau/engine/mbeans/mbeans-descriptors.xml");
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         }
@@ -73,7 +73,12 @@ public class StandardRegistry {
      * @date 2023/12/28
      */
     public void registerComponent(Object object,ObjectName objectName) {
-        ManagedBean managed = registry.findManagedBean(objectName.getCanonicalName());
+        ManagedBean managed =null;
+        try {
+            managed=registry.findManagedBean(object.getClass(),objectName.getKeyProperty("type"));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
         ModelMBean objectMBean = null;
         try {
             objectMBean = managed.createMBean(object);

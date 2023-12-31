@@ -1,10 +1,19 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <mbeans-descriptors>
+<!--    示例-->
     <mbean name="Hello" description="the hello bean" domain="org.example" group="helloGroup" type="org.example.Hello">
         <attribute name="name" description="a name attribute" type="java.lang.String" writeable="true"/>
         <operation name="printHello" description="public void printHello()" impact="ACTION" returnType="void"/>
         <operation name="printHello" description="public void printHello(String whoName)" impact="ACTION" returnType="void">
             <parameter name="whoName" description="method parameter of printHello" type="java.lang.String"></parameter>
         </operation>
+    </mbean>
+    <mbean name="StandardContext" description="the standard context bean" domain="engine" group="engine" type="Context">
+<!--        <attribute name="name" description="a name attribute" type="java.lang.String" writeable="true"/>-->
+<!--        <operation name="printHello" description="public void printHello()" impact="ACTION" returnType="void"/>-->
+<!--        <operation name="printHello" description="public void printHello(String whoName)" impact="ACTION" returnType="void">-->
+<!--            <parameter name="whoName" description="method parameter of printHello" type="java.lang.String"></parameter>-->
+<!--        </operation>-->
+<!--        TODO:完成想要暴露的属性、方法和通知的配置-->
     </mbean>
 </mbeans-descriptors>

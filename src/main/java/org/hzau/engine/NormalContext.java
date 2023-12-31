@@ -36,6 +36,8 @@ import java.util.stream.Collectors;
  * 类功能描述：context模块的标准实现
  *
  * TODO:为什么没有被JMX管理和生命周期管理
+ * TODO：为什么下一层没有wrapper 直接是servlet？
+ * TODO：是不是需要对所有容器封装一个接口，使用模板设计方法
  * @author kfk
  * @date 2023/12/28
  */
@@ -925,7 +927,7 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
 
     @Override
     protected void stopInternal() throws LifecycleException {
-
+            //TODO:完成stop 也就是stop后再start还可以正常运行
     }
 
 
@@ -953,7 +955,7 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
     }
 
     private void checkNotInitialized(String name) {
-        //TODO:应该舍弃此方法 而使用lifecycle方法
+        //TODO:应该舍弃此方法 而使用lifecycle中的方法
         if (this.initialized) {
             throw new IllegalStateException("Cannot call " + name + " after initialization.");
         }
@@ -981,13 +983,13 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
 
     @Override
     protected String getDomainInternal() {
-        //TODO:完成JMX管理
-        return null;
+        //TODO:domain应该是什么？
+        return "Engine";
     }
 
     @Override
     protected String getObjectNameKeyProperties() {
-        ////TODO:完成JMX管理
-        return null;
+        //TODO:如何设计ObjectName？
+        return "type=Context,name=" + this.config.server.context.name + ",host=" + this.config.server.context.virtualServerName + ",version=1.0.0";
     }
 }
