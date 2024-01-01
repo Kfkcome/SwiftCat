@@ -13,6 +13,8 @@ import org.apache.commons.cli.*;
 import org.hzau.classloader.Resource;
 import org.hzau.classloader.WebAppClassLoader;
 import org.hzau.connector.HttpConnector;
+import org.hzau.engine.lifecycle.LifecycleException;
+import org.hzau.threadpool.StandardThreadExecutor;
 import org.hzau.utils.ClassPathUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,7 +65,7 @@ public class Bootstrap {
         new Bootstrap().start(warFile, customConfigPath);
     }
 
-    public void start(String warFile, String customConfigPath) throws IOException {
+    public void start(String warFile, String customConfigPath) throws IOException, LifecycleException {
         //TODO:为什么每次只能加载一个war包
         Path warPath = parseWarFile(warFile);
 
@@ -166,12 +168,16 @@ public class Bootstrap {
         //----------------------------
 
         //定义线程池大小 TODO:包装线程池使其遵循生命周期管理 用JMX监控线程池
-        int threadPoolSize = config.server.threadPoolSize; // 假设这是您配置的线程池大小
-        ExecutorService executor = Executors.newFixedThreadPool(threadPoolSize);
+//        int threadPoolSize = config.server.threadPoolSize; // 假设这是您配置的线程池大小
+//        ExecutorService executor = Executors.newFixedThreadPool(threadPoolSize);
+
+        StandardThreadExecutor standardExecutor = new StandardThreadExecutor();
+        // 启动线程池等
+        standardExecutor.start();
 
         //----------------------------启动从connector启动开始 TODO: connector的生命周期管理
         //TODO: 应该配置几个Connector就主注册几个 Connector 而不是只注册一个
-        try (HttpConnector connector = new HttpConnector(config, webRoot, executor, classLoader, autoScannedClasses)) {
+        try (HttpConnector connector = new HttpConnector(config, webRoot, standardExecutor, classLoader, autoScannedClasses)) {
             for (; ; ) {
                 try {
                     Thread.sleep(1000);

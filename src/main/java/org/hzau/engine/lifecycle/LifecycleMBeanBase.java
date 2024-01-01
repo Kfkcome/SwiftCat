@@ -92,7 +92,7 @@ public abstract class LifecycleMBeanBase extends LifecycleBase
 
 
     /**
-     * Method implemented by sub-classes to identify the domain in which MBeans
+     * Met od implemented by sub-classes to identify the domain in which MBeans
      * should be registered.
      *
      * @return The name of the domain to use to register MBeans.
