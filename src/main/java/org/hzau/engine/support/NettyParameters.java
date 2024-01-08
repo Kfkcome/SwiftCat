@@ -1,8 +1,9 @@
 package org.hzau.engine.support;
 
-import io.netty.handler.codec.http.HttpRequest;
-import org.hzau.connector.HttpExchangeRequest;
+import io.netty.handler.codec.http.FullHttpRequest;
+
 import org.hzau.utils.HttpUtils;
+import org.hzau.utils.RequestParser;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -11,11 +12,11 @@ import java.util.*;
 
 public class NettyParameters {
 
-    final HttpRequest exchangeRequest;
+    final FullHttpRequest exchangeRequest;
     Charset charset;
-    Map<String, String[]> parameters;
+    Map<String, String> parameters;
 
-    public NettyParameters(HttpRequest exchangeRequest, String charset) {
+    public NettyParameters(FullHttpRequest exchangeRequest, String charset) {
         this.exchangeRequest = exchangeRequest;
         this.charset = Charset.forName(charset);
     }
@@ -37,50 +38,62 @@ public class NettyParameters {
     }
 
     public String[] getParameterValues(String name) {
-        return getParameterMap().get(name);
+        String[] values = new String[1];
+        values[0] = getParameterMap().get(name);
+        return values;
     }
 
-    public Map<String, String[]> getParameterMap() {
+    public Map<String, String> getParameterMap() {
         if (this.parameters == null) {
-            this.parameters = initParameters();
+            try {
+                this.parameters = initParameters();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         }
         return this.parameters;
     }
 
-    Map<String, String[]> initParameters() {
-        Map<String, List<String>> params = new HashMap<>();
+    Map<String, String> initParameters() throws IOException {
+        Map<String, String> params = new HashMap<>();
         String query = this.exchangeRequest.uri();
         if (query != null) {
-            params = HttpUtils.parseQuery(query, charset);
+            Map<String, List<String>> stringListMap = HttpUtils.parseQuery(query, charset);
+            stringListMap.forEach((k, v) -> params.put(k, v.get(0)));
         }
         if ("POST".equals(this.exchangeRequest.method().name())) {
-            String value = HttpUtils.getHeader(this.exchangeRequest.headers(), "Content-Type");
-            if (value != null && value.startsWith("application/x-www-form-urlencoded")) {
-                String requestBody;
-                //FIXME：修复了这里的编码问题
-                requestBody = new String(this.exchangeRequest.toString().getBytes(), charset);
-                Map<String, List<String>> postParams = HttpUtils.parseQuery(requestBody, charset);
-                // merge:
-                for (String key : postParams.keySet()) {
-                    List<String> postValues = postParams.get(key);
-                    List<String> queryValues = params.get(key);
-                    if (queryValues == null) {
-                        params.put(key, postValues);
-                    } else {
-                        queryValues.addAll(postValues);
-                    }
-                }
-            }
+            params.putAll(new RequestParser(exchangeRequest).parse()); // 将GET, POST所有请求参数转换成Map对象
+//
+//            String value = HttpUtils.getHeader(this.exchangeRequest.headers(), "Content-Type");
+//            if (value != null && value.startsWith("application/x-www-form-urlencoded")) {
+//                String requestBody;
+//                //FIXME：修复了这里的编码问题
+//
+//                requestBody = new String(exchangeRequest.content().toString().getBytes(), charset);
+//                Map<String, List<String>> postParams = HttpUtils.parseQuery(requestBody, charset);
+//                // merge:
+//                for (String key : postParams.keySet()) {
+//                    List<String> postValues = postParams.get(key);
+//                    List<String> queryValues = params.get(key);
+//                    if (queryValues == null) {
+//                        params.put(key, postValues);
+//                    } else {
+//                        queryValues.addAll(postValues);
+//                    }
+//                }
+//            }
         }
         if (params.isEmpty()) {
             return Map.of();
         }
         // convert:
-        Map<String, String[]> paramsMap = new HashMap<>();
-        for (String key : params.keySet()) {
-            List<String> values = params.get(key);
-            paramsMap.put(key, values.toArray(String[]::new));
-        }
-        return paramsMap;
+//        Map<String, String> paramsMap = new HashMap<>();
+//        for (String key : params.keySet()) {
+//            List<String> values = params.get(key);
+//            paramsMap.put(key, values.toArray(String[]::new));
+//        }
+
+
+        return params;
     }
 }

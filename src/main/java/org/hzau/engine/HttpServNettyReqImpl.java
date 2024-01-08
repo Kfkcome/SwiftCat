@@ -122,7 +122,14 @@ public class HttpServNettyReqImpl implements HttpServletRequest{
 
     @Override
     public Map<String, String[]> getParameterMap() {
-        return this.parameters.getParameterMap();
+        Map<String, String> parameterMap = parameters.getParameterMap();
+        Map<String, String[]> map = new HashMap<>();
+        parameterMap.forEach((k, v) -> {
+            String[] strings = new String[1];
+            strings[0] = v;
+            map.put(k, strings);
+        });
+        return map;
     }
 
     @Override
@@ -333,7 +340,7 @@ public class HttpServNettyReqImpl implements HttpServletRequest{
         Cookie[] cookies = getCookies();
         if (cookies != null) {
             for (Cookie cookie : cookies) {
-                if (config.server.contexts.get(0).sessionCookieName.equals(cookie.getName())) {
+                if (mappingData.info.sessionCookieName.equals(cookie.getName())) {
                     sessionId = cookie.getValue();
                     break;
                 }

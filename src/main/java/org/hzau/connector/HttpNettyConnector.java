@@ -7,7 +7,10 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.hzau.Config;
+import org.hzau.engine.NormalContext;
+import org.hzau.engine.lifecycle.LifecycleException;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 
@@ -30,14 +33,15 @@ public class HttpNettyConnector {
     Executor executor;
     ClassLoader classLoader;
     List<Class<?>> autoScannedClasses;
+    final List<NormalContext> servletContext = new ArrayList<>();
 
     public HttpNettyConnector(Config config, String webRoot, Executor executor, ClassLoader classLoader, List<Class<?>> autoScannedClasses) {
-        this.config=config;
+        this.config = config;
         this.port = config.server.port;
-        this.webRoot=webRoot;
-        this.executor=executor;
-        this.classLoader=classLoader;
-        this.autoScannedClasses=autoScannedClasses;
+        this.webRoot = webRoot;
+        this.executor = executor;
+        this.classLoader = classLoader;
+        this.autoScannedClasses = autoScannedClasses;
     }
 
     public void run() {
@@ -51,7 +55,23 @@ public class HttpNettyConnector {
         bootstrap.group(bossGroup, workerGroup);
         //配置 Channel
         bootstrap.channel(NioServerSocketChannel.class);
-        bootstrap.childHandler(new ServerIniterHandler(config,webRoot,executor,classLoader,autoScannedClasses));
+
+        //初始化context
+        NormalContext ctx = null;
+        List<Config.Server.Context> contexts = config.server.contexts;
+        for (Config.Server.Context context : contexts) {
+            try {
+                ctx = new NormalContext(context.name, context.path, context.fileListings, context.virtualServerName, context.sessionCookieName, context.sessionTimeout, classLoader, config, webRoot, autoScannedClasses);
+
+                ctx.init();//TODO:为什么初始化的时候就注册servlet
+                ctx.start();
+                this.servletContext.add(ctx);
+            } catch (LifecycleException e) {
+                throw new RuntimeException(e);//TODO:处理加载context加载异常
+            }
+
+        }
+        bootstrap.childHandler(new ServerIniterHandler(servletContext,config, webRoot, executor, classLoader, autoScannedClasses));
         //BACKLOG用于构造服务端套接字ServerSocket对象，
         // 标识当服务器请求处理线程全满时，用于临时存放已完成三次握手的请求的队列的最大长度
         bootstrap.option(ChannelOption.SO_BACKLOG, 1024);
@@ -74,8 +94,4 @@ public class HttpNettyConnector {
             workerGroup.shutdownGracefully();
         }
     }
-
-//    public static void main(String[] args) {
-//        new HttpNettyConnector(8899).run();
-//    }
 }

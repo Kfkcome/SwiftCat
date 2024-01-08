@@ -10,7 +10,9 @@ import io.netty.handler.codec.http.HttpServerCodec;
 import io.netty.handler.codec.string.StringDecoder;
 import io.netty.handler.codec.string.StringEncoder;
 import org.hzau.Config;
+import org.hzau.engine.NormalContext;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Executor;
 
@@ -31,8 +33,10 @@ public class ServerIniterHandler extends ChannelInitializer<SocketChannel> {
     Executor executor;
     ClassLoader classLoader;
     List<Class<?>> autoScannedClasses;
-    ServerIniterHandler(Config config,String webRoot, Executor executor, ClassLoader classLoader, List<Class<?>> autoScannedClasses){
+    List<NormalContext> servletContext = new ArrayList<>();
+    ServerIniterHandler(List<NormalContext> servletContext ,Config config,String webRoot, Executor executor, ClassLoader classLoader, List<Class<?>> autoScannedClasses){
         this.config=config;
+        this.servletContext=servletContext;
         this.webRoot=webRoot;
         this.executor=executor;
         this.classLoader=classLoader;
@@ -49,6 +53,6 @@ public class ServerIniterHandler extends ChannelInitializer<SocketChannel> {
         pipeline.addLast(new HttpServerCodec());// http 编解码
         pipeline.addLast("httpAggregator",new HttpObjectAggregator(512*1024));
         //聊天服务通道处理
-        pipeline.addLast("chat", new ServerHandler(config,webRoot,executor,classLoader,autoScannedClasses));
+        pipeline.addLast("chat", new ServerHandler(servletContext,config,webRoot,executor,classLoader,autoScannedClasses));
     }
 }

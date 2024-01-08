@@ -42,27 +42,15 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
     private Config config;
     final Logger logger = LoggerFactory.getLogger(getClass());
     final ClassLoader classLoader;
-    final List<NormalContext> servletContext = new ArrayList<>();
+    List<NormalContext> servletContext = new ArrayList<>();
 
 
-    ServerHandler(Config config, String webRoot, Executor executor, ClassLoader classLoader, List<Class<?>> autoScannedClasses) {
+    ServerHandler(List<NormalContext> servletContext,Config config, String webRoot, Executor executor, ClassLoader classLoader, List<Class<?>> autoScannedClasses) {
         this.config = config;
         this.classLoader = classLoader;
+        this.servletContext=servletContext;
 
-        NormalContext ctx = null;
-        List<Config.Server.Context> contexts = config.server.contexts;
-        for (Config.Server.Context context : contexts) {
-            try {
-                ctx = new NormalContext(context.name, context.path, context.fileListings, context.virtualServerName, context.sessionCookieName, context.sessionTimeout, classLoader, config, webRoot, autoScannedClasses);
 
-                ctx.init();//TODO:为什么初始化的时候就注册servlet
-                ctx.start();
-                this.servletContext.add(ctx);
-            } catch (LifecycleException e) {
-                throw new RuntimeException(e);//TODO:处理加载context加载异常
-            }
-
-        }
     }
 
 
@@ -106,14 +94,27 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         request.mappingData.requestPath = req.uri();
         request.mappingData.contexts = this.servletContext;
 
-
+        for (Config.Server.Context context1 : config.server.contexts) {
+            //FIXME:自带的defaultServlet无法匹配的到config中的context
+            if (request.mappingData.requestPath.split("/").length >= 1 && context1.path.equals("/" + request.mappingData.requestPath.split("/")[1])) {
+                request.mappingData.info = context1;
+                break;
+            }
+        }
         //获取resquest和response后开始处理
         for (NormalContext context1 : request.mappingData.contexts) {
-            //FIXME:处理servlet跳转的网页没有加上context path的问题
-            if (context1.getContextPath().equals("/" + request.mappingData.requestPath.split("/")[1])) {
+            //处理默认的
+            if (request.mappingData.requestPath.split("/").length == 1 && context1.getContextPath().equals("/")) {
                 request.mappingData.context = context1;
                 break;
             }
+            //FIXME:处理servlet跳转的网页没有加上context path的问题
+            if (request.mappingData.requestPath.split("/").length >= 1 && context1.getContextPath().equals("/" + request.mappingData.requestPath.split("/")[1])) {
+                request.mappingData.context = context1;
+                break;
+            }
+
+
         }
 
         if (request.mappingData.context == null) {

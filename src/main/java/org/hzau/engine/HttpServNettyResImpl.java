@@ -214,6 +214,8 @@ public class HttpServNettyResImpl implements HttpServletResponse {
     public void sendRedirect(String location) throws IOException {
         checkNotCommitted();
         this.status = 302;
+        exchange.setStatus(HttpResponseStatus.valueOf(this.status));
+        exchange.headers().set("Location", location);
         this.headers.set("Location", location);
         commitHeaders(-1);
     }
@@ -295,8 +297,7 @@ public class HttpServNettyResImpl implements HttpServletResponse {
         if (length >= 0) {
             this.headers.set(HttpHeaderNames.CONTENT_LENGTH, length);
         }
-        //FIXME：修复了这里的编码问题
-//        this.exchangeResponse.setStatus(HttpResponseStatus.valueOf(this.status));
+        exchange.headers().set(HttpHeaderNames.CONTENT_LENGTH, length);
         // 如果有其他需要提交的头部，也应该在这里处理
         this.committed = true;
     }
@@ -327,7 +328,7 @@ public class HttpServNettyResImpl implements HttpServletResponse {
 
         private final ByteBufOutputStream outputStream;
 
-        public NettyServletOutputStream( ByteBufOutputStream outputStream) {
+        public NettyServletOutputStream(ByteBufOutputStream outputStream) {
             this.outputStream = outputStream;
         }
 

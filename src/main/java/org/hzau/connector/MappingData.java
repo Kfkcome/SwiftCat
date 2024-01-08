@@ -17,6 +17,7 @@
 package org.hzau.connector;
 
 import jakarta.servlet.http.MappingMatch;
+import org.hzau.Config;
 import org.hzau.engine.NormalContext;
 
 import java.util.List;
@@ -31,6 +32,7 @@ public class MappingData {
 
     //    public Host host = null;
     public NormalContext context = null;
+    public Config.Server.Context info=null;
     public int contextSlashCount = 0;
     public List<NormalContext> contexts = null;
     //    public Wrapper wrapper = null;
