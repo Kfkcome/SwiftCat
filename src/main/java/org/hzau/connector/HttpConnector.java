@@ -78,8 +78,8 @@ public class HttpConnector implements HttpHandler, AutoCloseable {
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {    //TODO: 为什么要用HttpHandler 为什么没有Host这一层
-        var adapter = new HttpExchangeAdapter(exchange);
-        var response = new HttpServletResponseImpl(this.config, adapter);
+        HttpExchangeAdapter adapter = new HttpExchangeAdapter(exchange);
+        HttpServletResponseImpl response = new HttpServletResponseImpl(this.config, adapter);
         HttpServletRequestImpl request = new HttpServletRequestImpl(this.config, adapter, response);
 
         //request mapping

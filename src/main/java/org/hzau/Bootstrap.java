@@ -13,6 +13,7 @@ import org.apache.commons.cli.*;
 import org.hzau.classloader.Resource;
 import org.hzau.classloader.WebAppClassLoader;
 import org.hzau.connector.HttpConnector;
+import org.hzau.connector.HttpNettyConnector;
 import org.hzau.engine.lifecycle.LifecycleException;
 import org.hzau.threadpool.StandardThreadExecutor;
 import org.hzau.utils.ClassPathUtils;
@@ -177,7 +178,23 @@ public class Bootstrap {
 
         //----------------------------启动从connector启动开始 TODO: connector的生命周期管理
         //TODO: 应该配置几个Connector就主注册几个 Connector 而不是只注册一个
-        try (HttpConnector connector = new HttpConnector(config, webRoot, standardExecutor, classLoader, autoScannedClasses)) {
+//        try (HttpConnector connector = new HttpConnector(config, webRoot, standardExecutor, classLoader, autoScannedClasses)) {
+//            for (; ; ) {
+//                try {
+//                    Thread.sleep(1000);
+//                } catch (InterruptedException e) {
+//                    break;
+//                }
+//            }
+//        } catch (Exception e) {
+//            logger.error(e.getMessage(), e);
+//        }
+        //使用Netty 的nio connector
+        //FIXME:跳转网页不成功 不知道是哪里的问题
+        try  {
+            //TODO:实现autocloseable接口
+            HttpNettyConnector connector = new HttpNettyConnector(config, webRoot, standardExecutor, classLoader, autoScannedClasses);
+            connector.run();
             for (; ; ) {
                 try {
                     Thread.sleep(1000);

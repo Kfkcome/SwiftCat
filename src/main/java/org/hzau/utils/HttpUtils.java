@@ -1,6 +1,8 @@
 package org.hzau.utils;
 
 import com.sun.net.httpserver.Headers;
+
+import io.netty.handler.codec.http.HttpHeaders;
 import jakarta.servlet.http.Cookie;
 
 import java.net.URLDecoder;
@@ -80,6 +82,10 @@ public class HttpUtils {
     public static String getHeader(Headers headers, String name) {
         List<String> values = headers.get(name);
         return values == null || values.isEmpty() ? null : values.get(0);
+    }
+    public static String getHeader(HttpHeaders headers, String name){
+        List<String> values=headers.getAll(name);
+        return values==null||values.isEmpty()?null:values.get(0);
     }
 
     public static Cookie[] parseCookies(String cookieValue) {
