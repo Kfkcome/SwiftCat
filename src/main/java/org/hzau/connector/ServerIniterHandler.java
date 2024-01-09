@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.concurrent.Executor;
 
 
-
 /**
  * descripiton: 服务器初始化
  *
@@ -29,19 +28,13 @@ import java.util.concurrent.Executor;
  */
 public class ServerIniterHandler extends ChannelInitializer<SocketChannel> {
     Config config;
-    String webRoot;
-    Executor executor;
-    ClassLoader classLoader;
-    List<Class<?>> autoScannedClasses;
-    List<NormalContext> servletContext = new ArrayList<>();
-    ServerIniterHandler(List<NormalContext> servletContext ,Config config,String webRoot, Executor executor, ClassLoader classLoader, List<Class<?>> autoScannedClasses){
-        this.config=config;
-        this.servletContext=servletContext;
-        this.webRoot=webRoot;
-        this.executor=executor;
-        this.classLoader=classLoader;
-        this.autoScannedClasses=autoScannedClasses;
+    List<NormalContext> servletContext;
+
+    ServerIniterHandler(List<NormalContext> servletContext, Config config) {
+        this.servletContext = servletContext;
+        this.config = config;
     }
+
     @Override
     protected void initChannel(SocketChannel socketChannel) throws Exception {
         //管道注册handler
@@ -51,8 +44,8 @@ public class ServerIniterHandler extends ChannelInitializer<SocketChannel> {
 //        //转码通道处理
 //        pipeline.addLast("encode", new HttpRequestDecoder());
         pipeline.addLast(new HttpServerCodec());// http 编解码
-        pipeline.addLast("httpAggregator",new HttpObjectAggregator(512*1024));
+        pipeline.addLast("httpAggregator", new HttpObjectAggregator(512 * 1024));
         //聊天服务通道处理
-        pipeline.addLast("chat", new ServerHandler(servletContext,config,webRoot,executor,classLoader,autoScannedClasses));
+        pipeline.addLast("chat", new ServerHandler(servletContext, config));
     }
 }

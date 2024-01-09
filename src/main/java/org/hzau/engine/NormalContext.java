@@ -878,6 +878,8 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
                 logger.error("init servlet failed: " + name + " / " + registration.servlet.getClass().getName(), e);
             }
         }
+        //TODO:应该单独给DefaultServlet设置一个Context
+        //FIXME:修复DefaultServlet不能使用
         if (defaultServlet == null && config.server.contexts.get(0).fileListings) {
             logger.info("no default servlet. auto register {}...", DefaultServlet.class.getName());
             defaultServlet = new DefaultServlet();

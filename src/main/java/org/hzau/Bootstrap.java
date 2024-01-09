@@ -47,34 +47,100 @@ public class Bootstrap {
 
         //TODO:为什么只能加载war包，而不是目录文件
         //TODO:添加host层使得可以配置多个webapps目录 比如webapps1 webapps2
-        File file=new File("./webapps");
+        File file = new File("./webapps");
         if (!file.exists()) {
             file.mkdir();
         }
-        for (File listFile : file.listFiles()) {
 
-            //TODO:实现可以配置context的docBase也就是servlet所在的目录 也就是webapps/the value of docBase
-            //TODO:并且如果不在yml中配置的话 也能使用默认配置 将webapps下所有servlet都注册
-            String[] split = listFile.getName().split("\\.");
-            if(listFile.isFile()&&split[split.length-1].equals("war")){
-                warFile=listFile.getAbsolutePath();
-            }
-            else{
-                //TODO:处理目录文件
-            }
-        }
-        new Bootstrap().start(warFile, customConfigPath);
+//        for (File listFile : file.listFiles()) {
+//
+//            //TODO:实现可以配置context的docBase也就是servlet所在的目录 也就是webapps/the value of docBase
+//            //TODO:并且如果不在yml中配置的话 也能使用默认配置 将webapps下所有servlet都注册
+//            String[] split = listFile.getName().split("\\.");
+//            if (listFile.isFile() && split[split.length - 1].equals("war")) {
+//                warFile = listFile.getAbsolutePath();
+//            } else {
+//                //TODO:处理目录文件
+//            }
+//        }
+        new Bootstrap().start(customConfigPath);
     }
 
-    public void start(String warFile, String customConfigPath) throws IOException, LifecycleException {
+    public Map<String, List<Class<?>>> ScanClassed(String key,String filePath,Map<String,ClassLoader> loaders) {
+        Path path = parseWarFile(filePath);
+        if (path==null){
+            return null;
+        }
+        Map<String, List<Class<?>>> listMap = new HashMap<>();
+        Path[] ps = null;
+        try {
+            ps = extractWarIfNecessary(path);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        Set<Class<?>> classSet = new HashSet<>();
+        // set classloader:
+        WebAppClassLoader classLoader = null;
+        try {
+            classLoader = new WebAppClassLoader(ps[0], ps[1]);
+            loaders.put(key,classLoader);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        //-----------------------
+        WebAppClassLoader finalClassLoader = classLoader;
+        Consumer<Resource> handler = (r) -> {//定义一个Consumer<Resource>类型的handler 相当于一个函数
+            if (r.getName().endsWith(".class")) {//如果是class文件
+                //获取类名
+                String className = r.getName().substring(0, r.getName().length() - 6).replace('/', '.');
+                if (className.endsWith("module-info") || className.endsWith("package-info")) {
+                    return;
+                }
+                Class<?> clazz;
+                try {
+                    clazz = finalClassLoader.loadClass(className);
+                } catch (ClassNotFoundException e) {
+                    logger.warn("load class '{}' failed: {}: {}", className, e.getClass().getSimpleName(), e.getMessage());
+                    return;
+                } catch (NoClassDefFoundError err) {
+                    logger.error("load class '{}' failed: {}: {}", className, err.getClass().getSimpleName(), err.getMessage());
+                    return;
+                }
+                if (clazz.isAnnotationPresent(WebServlet.class)) {//如果标记了WebServlet注解
+                    logger.info("Found @WebServlet: {}", clazz.getName());
+                    classSet.add(clazz);
+                }
+                if (clazz.isAnnotationPresent(WebFilter.class)) {//如果标记了WebFilter注解
+                    logger.info("Found @WebFilter: {}", clazz.getName());
+                    classSet.add(clazz);
+                }
+                if (clazz.isAnnotationPresent(WebListener.class)) {//如果标记了WebListener注解
+                    logger.info("Found @WebListener: {}", clazz.getName());
+                    classSet.add(clazz);
+                }
+            }
+        };
+
+
+        //-----------------------
+
+        classLoader.scanClassPath(handler);
+        classLoader.scanJar(handler);
+        List<Class<?>> autoScannedClasses = new ArrayList<>(classSet);
+        listMap.put(key, autoScannedClasses);
+        return listMap;
+    }
+
+    public void start(String customConfigPath) throws IOException, LifecycleException {
         //TODO:为什么每次只能加载一个war包
-        Path warPath = parseWarFile(warFile);
-
-        // extract war if necessary:
-        Path[] ps = extractWarIfNecessary(warPath);
-
-        String webRoot = ps[0].getParent().getParent().toString();
-        logger.info("set web root: {}", webRoot);
+//        Path warPath = parseWarFile(warFile);
+//
+//        // extract war if necessary:
+//        Path[] ps = extractWarIfNecessary(warPath);
+//
+//        String webRoot = ps[0].getParent().getParent().toString();
+//        logger.info("set web root: {}", webRoot);
 
         // load configs:
         String defaultConfigYaml = ClassPathUtils.readString("/server.yml");
@@ -111,52 +177,16 @@ public class Bootstrap {
                 throw new RuntimeException(e);
             }
         }
-
-        // set classloader:
-        var classLoader = new WebAppClassLoader(ps[0], ps[1]);
-
-        // scan class:
-        //TODO: 修复一次加载出来所有类的问题 应该动态的按需加载
-        Set<Class<?>> classSet = new HashSet<>();
-        //-----------------------
-        Consumer<Resource> handler = (r) -> {//定义一个Consumer<Resource>类型的handler 相当于一个函数
-            if (r.getName().endsWith(".class")) {//如果是class文件
-                //获取类名
-                String className = r.getName().substring(0, r.getName().length() - 6).replace('/', '.');
-                if (className.endsWith("module-info") || className.endsWith("package-info")) {
-                    return;
-                }
-                Class<?> clazz;
-                try {
-                    clazz = classLoader.loadClass(className);
-                } catch (ClassNotFoundException e) {
-                    logger.warn("load class '{}' failed: {}: {}", className, e.getClass().getSimpleName(), e.getMessage());
-                    return;
-                } catch (NoClassDefFoundError err) {
-                    logger.error("load class '{}' failed: {}: {}", className, err.getClass().getSimpleName(), err.getMessage());
-                    return;
-                }
-                if (clazz.isAnnotationPresent(WebServlet.class)) {//如果标记了WebServlet注解
-                    logger.info("Found @WebServlet: {}", clazz.getName());
-                    classSet.add(clazz);
-                }
-                if (clazz.isAnnotationPresent(WebFilter.class)) {//如果标记了WebFilter注解
-                    logger.info("Found @WebFilter: {}", clazz.getName());
-                    classSet.add(clazz);
-                }
-                if (clazz.isAnnotationPresent(WebListener.class)) {//如果标记了WebListener注解
-                    logger.info("Found @WebListener: {}", clazz.getName());
-                    classSet.add(clazz);
-                }
+        Map<String, List<Class<?>>> listMap = new HashMap<>();
+        Map<String,ClassLoader> loaderMap = new HashMap<>();
+        for (Config.Server.Context context : config.server.contexts) {
+            Map<String, List<Class<?>>> listMap1 = ScanClassed(context.docBase,"./webapps/" + context.docBase, loaderMap);
+            if(listMap1==null){
+                logger.error("部署"+context.name+"失败了");
+                continue;
             }
-        };
-
-
-        //-----------------------
-
-        classLoader.scanClassPath(handler);
-        classLoader.scanJar(handler);
-        List<Class<?>> autoScannedClasses = new ArrayList<>(classSet);
+            listMap.putAll(listMap1);
+        }
 
         // executor:
         if (config.server.enableVirtualThread) {
@@ -168,7 +198,6 @@ public class Bootstrap {
 
         //----------------------------
 
-        //定义线程池大小 TODO:包装线程池使其遵循生命周期管理 用JMX监控线程池
 //        int threadPoolSize = config.server.threadPoolSize; // 假设这是您配置的线程池大小
 //        ExecutorService executor = Executors.newFixedThreadPool(threadPoolSize);
 
@@ -190,10 +219,9 @@ public class Bootstrap {
 //            logger.error(e.getMessage(), e);
 //        }
         //使用Netty 的nio connector
-        //FIXME:跳转网页不成功 不知道是哪里的问题
-        try  {
+        try {
             //TODO:实现autocloseable接口
-            HttpNettyConnector connector = new HttpNettyConnector(config, webRoot, standardExecutor, classLoader, autoScannedClasses);
+            HttpNettyConnector connector = new HttpNettyConnector(config,standardExecutor, listMap,loaderMap);
             connector.run();
             for (; ; ) {
                 try {
@@ -250,14 +278,14 @@ public class Bootstrap {
     Path parseWarFile(String warFile) {
         Path warPath = Path.of(warFile).toAbsolutePath().normalize();
         if (!Files.isRegularFile(warPath) && !Files.isDirectory(warPath)) {
-            System.err.printf("war file '%s' was not found.\n", warFile);
-            System.exit(1);
+            logger.error("找不到"+warFile+"文件或目录");
+            return null;
         }
         return warPath;
     }
 
     Path createExtractTo(String warPackageName) throws IOException {
-        Path tmp = Paths.get("./webapps/"+warPackageName.split("\\.")[0]);
+        Path tmp = Paths.get("./webapps/" + warPackageName.split("\\.")[0]);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 deleteDir(tmp);

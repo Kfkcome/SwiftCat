@@ -32,6 +32,8 @@ public class Config {
 
         public static class Context {//一个上下文
             public String name;
+            public String docBase;
+
             public String path;
             public boolean fileListings;
             public String virtualServerName;

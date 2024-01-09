@@ -41,13 +41,11 @@ import static io.netty.handler.codec.http.HttpUtil.is100ContinueExpected;
 public class ServerHandler extends ChannelInboundHandlerAdapter {
     private Config config;
     final Logger logger = LoggerFactory.getLogger(getClass());
-    final ClassLoader classLoader;
     List<NormalContext> servletContext = new ArrayList<>();
 
 
-    ServerHandler(List<NormalContext> servletContext,Config config, String webRoot, Executor executor, ClassLoader classLoader, List<Class<?>> autoScannedClasses) {
+    ServerHandler(List<NormalContext> servletContext,Config config) {
         this.config = config;
-        this.classLoader = classLoader;
         this.servletContext=servletContext;
 
 
@@ -124,7 +122,7 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         }
         // process:
         try {
-            Thread.currentThread().setContextClassLoader(this.classLoader);
+            Thread.currentThread().setContextClassLoader(request.mappingData.context.getClassLoader());
             //调用context模块的process方法 calling ContextImpl.process
             request.mappingData.context.process(request, response);
         } catch (Exception e) {
