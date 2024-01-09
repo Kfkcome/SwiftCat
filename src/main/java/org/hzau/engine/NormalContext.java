@@ -128,6 +128,7 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
                 enabledFilters.add(mapping.filter);
             }
         }
+        //创建并执行过滤链
         Filter[] filters = enabledFilters.toArray(Filter[]::new);
         logger.atDebug().log("process {} by filter {}, servlet {}", path, Arrays.toString(filters), servlet);
         FilterChain chain = new FilterChainImpl(filters, servlet);//调用servlet

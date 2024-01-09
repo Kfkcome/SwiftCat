@@ -7,6 +7,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.hzau.Config;
+import org.hzau.connector.websocket.WebSocketChannelInitializer;
 import org.hzau.engine.NormalContext;
 import org.hzau.engine.lifecycle.LifecycleException;
 
@@ -50,10 +51,19 @@ public class HttpNettyConnector {
         //负责处理客户端i/o事件、task任务、监听任务组
         EventLoopGroup workerGroup = new NioEventLoopGroup();
         //启动 NIO 服务的辅助启动类
+
+        //实现WebSocket
         ServerBootstrap bootstrap = new ServerBootstrap();
-        bootstrap.group(bossGroup, workerGroup);
-        //配置 Channel
-        bootstrap.channel(NioServerSocketChannel.class);
+        bootstrap.group(bossGroup, workerGroup)
+                .channel(NioServerSocketChannel.class)
+                .childHandler(new WebSocketChannelInitializer()) // 使用 WebSocket 初始化器
+                .option(ChannelOption.SO_BACKLOG, 1024)
+                .childOption(ChannelOption.SO_KEEPALIVE, true);
+
+
+//        bootstrap.group(bossGroup, workerGroup);
+//        //配置 Channel
+//        bootstrap.channel(NioServerSocketChannel.class);
 
         //初始化context
         NormalContext ctx = null;

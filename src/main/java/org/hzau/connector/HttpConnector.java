@@ -87,13 +87,13 @@ public class HttpConnector implements HttpHandler, AutoCloseable {
         request.mappingData.contexts = this.servletContext;
         for (NormalContext context : request.mappingData.contexts) {
             //FIXME:处理servlet跳转的网页没有加上context path的问题
-            if (context.getContextPath().equals("/"+request.mappingData.requestPath.split("/")[1])) {
+            if (context.getContextPath().equals("/" + request.mappingData.requestPath.split("/")[1])) {
                 request.mappingData.context = context;
                 break;
             }
         }
 
-        if (request.mappingData.context==null){
+        if (request.mappingData.context == null) {
             logger.error("找不到对应的url");
             response.sendError(404);
             return;
