@@ -7,7 +7,7 @@ import org.hzau.engine.support.Attributes;
 
 import java.util.Enumeration;
 
-public class HttpSessionImpl implements HttpSession {
+public class HttpSessionImpl implements HttpSession,Comparable<HttpSessionImpl>  {
 
     final NormalContext servletContext;
 
@@ -113,5 +113,10 @@ public class HttpSessionImpl implements HttpSession {
     @Override
     public String toString() {
         return String.format("HttpSessionImpl@%s[id=%s]", Integer.toHexString(hashCode()), this.getId());
+    }
+
+    @Override
+    public int compareTo(HttpSessionImpl other) {
+        return Long.compare(this.lastAccessedTime, other.lastAccessedTime);
     }
 }
