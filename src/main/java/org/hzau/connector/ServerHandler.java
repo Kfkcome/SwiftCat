@@ -106,7 +106,6 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
                 request.mappingData.context = context1;
                 break;
             }
-            //FIXME:处理servlet跳转的网页没有加上context path的问题
             if (request.mappingData.requestPath.split("/").length >= 1 && context1.getContextPath().equals("/" + request.mappingData.requestPath.split("/")[1])) {
                 request.mappingData.context = context1;
                 break;

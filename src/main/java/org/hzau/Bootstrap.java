@@ -44,31 +44,15 @@ public class Bootstrap {
         String warFile = null;
         String customConfigPath = null;
 
-
         //TODO:为什么只能加载war包，而不是目录文件
         //TODO:添加host层使得可以配置多个webapps目录 比如webapps1 webapps2
-        File file = new File("./webapps");
-        if (!file.exists()) {
-            file.mkdir();
-        }
 
-//        for (File listFile : file.listFiles()) {
-//
-//            //TODO:实现可以配置context的docBase也就是servlet所在的目录 也就是webapps/the value of docBase
-//            //TODO:并且如果不在yml中配置的话 也能使用默认配置 将webapps下所有servlet都注册
-//            String[] split = listFile.getName().split("\\.");
-//            if (listFile.isFile() && split[split.length - 1].equals("war")) {
-//                warFile = listFile.getAbsolutePath();
-//            } else {
-//                //TODO:处理目录文件
-//            }
-//        }
         new Bootstrap().start(customConfigPath);
     }
 
-    public Map<String, List<Class<?>>> ScanClassed(String key,String filePath,Map<String,ClassLoader> loaders) {
+    public Map<String, List<Class<?>>> ScanClassed(String key, String filePath, Map<String, ClassLoader> loaders) {
         Path path = parseWarFile(filePath);
-        if (path==null){
+        if (path == null) {
             return null;
         }
         Map<String, List<Class<?>>> listMap = new HashMap<>();
@@ -84,7 +68,7 @@ public class Bootstrap {
         WebAppClassLoader classLoader = null;
         try {
             classLoader = new WebAppClassLoader(ps[0], ps[1]);
-            loaders.put(key,classLoader);
+            loaders.put(key, classLoader);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -132,16 +116,7 @@ public class Bootstrap {
         return listMap;
     }
 
-    public void start(String customConfigPath) throws IOException, LifecycleException {
-        //TODO:为什么每次只能加载一个war包
-//        Path warPath = parseWarFile(warFile);
-//
-//        // extract war if necessary:
-//        Path[] ps = extractWarIfNecessary(warPath);
-//
-//        String webRoot = ps[0].getParent().getParent().toString();
-//        logger.info("set web root: {}", webRoot);
-
+    public void start(String customConfigPath) throws LifecycleException {
         // load configs:
         String defaultConfigYaml = ClassPathUtils.readString("/server.yml");
         String customConfigYaml = null;
@@ -178,11 +153,12 @@ public class Bootstrap {
             }
         }
         Map<String, List<Class<?>>> listMap = new HashMap<>();
-        Map<String,ClassLoader> loaderMap = new HashMap<>();
+        Map<String, ClassLoader> loaderMap = new HashMap<>();
         for (Config.Server.Context context : config.server.contexts) {
-            Map<String, List<Class<?>>> listMap1 = ScanClassed(context.docBase,"./webapps/" + context.docBase, loaderMap);
-            if(listMap1==null){
-                logger.error("部署"+context.name+"失败了");
+            //TODO:处理没有webapps的异常
+            Map<String, List<Class<?>>> listMap1 = ScanClassed(context.docBase, "./webapps/" + context.docBase, loaderMap);
+            if (listMap1 == null) {
+                logger.error("部署" + context.name + "失败了");
                 continue;
             }
             listMap.putAll(listMap1);
@@ -192,11 +168,6 @@ public class Bootstrap {
         if (config.server.enableVirtualThread) {
             logger.info("Virtual thread is enabled.");
         }
-//        ExecutorService executor = config.server.enableVirtualThread ? Executors.newVirtualThreadPerTaskExecutor()
-//                : new ThreadPoolExecutor(0, config.server.threadPoolSize, 0L, TimeUnit.MILLISECONDS,
-//                        new LinkedBlockingQueue<>());
-
-        //----------------------------
 
 //        int threadPoolSize = config.server.threadPoolSize; // 假设这是您配置的线程池大小
 //        ExecutorService executor = Executors.newFixedThreadPool(threadPoolSize);
@@ -207,6 +178,8 @@ public class Bootstrap {
 
         //----------------------------启动从connector启动开始 TODO: connector的生命周期管理
         //TODO: 应该配置几个Connector就主注册几个 Connector 而不是只注册一个
+        //TODO: 配置文件中应该配置BIO还是NIO
+        //BIO connector
 //        try (HttpConnector connector = new HttpConnector(config, webRoot, standardExecutor, classLoader, autoScannedClasses)) {
 //            for (; ; ) {
 //                try {
@@ -221,7 +194,7 @@ public class Bootstrap {
         //使用Netty 的nio connector
         try {
             //TODO:实现autocloseable接口
-            HttpNettyConnector connector = new HttpNettyConnector(config,standardExecutor, listMap,loaderMap);
+            HttpNettyConnector connector = new HttpNettyConnector(config, standardExecutor, listMap, loaderMap);
             connector.run();
             for (; ; ) {
                 try {
@@ -278,7 +251,7 @@ public class Bootstrap {
     Path parseWarFile(String warFile) {
         Path warPath = Path.of(warFile).toAbsolutePath().normalize();
         if (!Files.isRegularFile(warPath) && !Files.isDirectory(warPath)) {
-            logger.error("找不到"+warFile+"文件或目录");
+            logger.error("找不到" + warFile + "文件或目录");
             return null;
         }
         return warPath;
