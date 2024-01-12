@@ -3,15 +3,12 @@ package org.hzau.engine.mapping;
 import java.util.regex.Pattern;
 
 public class AbstractMapping implements Comparable<AbstractMapping> {
-
     final Pattern pattern;
     final String url;
-
     public AbstractMapping(String urlPattern) {
         this.url = urlPattern;
         this.pattern = buildPattern(urlPattern);
     }
-
     public boolean matches(String uri) {
         return pattern.matcher(uri).matches();
     }

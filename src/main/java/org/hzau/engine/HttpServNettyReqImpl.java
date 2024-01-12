@@ -13,15 +13,14 @@ import org.hzau.engine.support.NettyParameters;
 import org.hzau.utils.HttpUtils;
 
 import java.io.*;
-
 import java.security.Principal;
 import java.util.*;
 
-public class HttpServNettyReqImpl implements HttpServletRequest{
+public class HttpServNettyReqImpl implements HttpServletRequest {
 
     final Config config;
 
-    public final MappingData mappingData=new MappingData();
+    public final MappingData mappingData = new MappingData();
     final FullHttpRequest exchange;
     final HttpServletResponse response;
     final String method;
@@ -588,5 +587,6 @@ public class HttpServNettyReqImpl implements HttpServletRequest{
         public void close() throws IOException {
             inputStream.close();
         }
-}}
+    }
+}
 
