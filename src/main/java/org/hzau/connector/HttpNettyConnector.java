@@ -16,15 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
-/**
- * descripiton:服务端
- *
- * @author: www.iknowba.cn
- * @date: 2018/3/23
- * @time: 15:37
- * @modifier:
- * @since:
- */
+
 public class HttpNettyConnector {
     /**
      * 端口

@@ -32,15 +32,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 
-/**
- * 类功能描述：context模块的标准实现
- *
- * TODO:为什么没有被JMX管理和生命周期管理
- * TODO：为什么下一层没有wrapper 直接是servlet？
- * TODO：是不是需要对所有容器封装一个接口，使用模板设计方法
- * @author kfk
- * @date 2023/12/28
- */
 public class NormalContext extends LifecycleMBeanBase implements ServletContext {
 
     private final String name;

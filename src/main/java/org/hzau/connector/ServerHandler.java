@@ -1,52 +1,30 @@
 package org.hzau.connector;
 
-import io.netty.buffer.ByteBufOutputStream;
+
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.handler.codec.http.*;
-import io.netty.util.CharsetUtil;
 import io.netty.util.concurrent.GlobalEventExecutor;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.hzau.Config;
 import org.hzau.engine.*;
-import org.hzau.engine.lifecycle.LifecycleException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.netty.buffer.ByteBuf;
-
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.net.SocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executor;
 
-import static io.netty.handler.codec.http.HttpUtil.is100ContinueExpected;
 
-/**
- * descripiton: 服务器的处理逻辑
- *
- * @author: www.iknowba.cn
- * @date: 2018/3/23
- * @time: 15:50
- * @modifier:
- * @since:
- */
 public class ServerHandler extends ChannelInboundHandlerAdapter {
     private Config config;
     final Logger logger = LoggerFactory.getLogger(getClass());
     List<NormalContext> servletContext = new ArrayList<>();
 
 
-    ServerHandler(List<NormalContext> servletContext,Config config) {
+    ServerHandler(List<NormalContext> servletContext, Config config) {
         this.config = config;
-        this.servletContext=servletContext;
+        this.servletContext = servletContext;
 
 
     }

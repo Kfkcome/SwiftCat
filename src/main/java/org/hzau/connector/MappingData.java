@@ -23,11 +23,6 @@ import org.hzau.engine.NormalContext;
 import java.util.List;
 
 
-/**
- * Mapping data.
- *
- * @author Remy Maucherat
- */
 public class MappingData {
 
     //    public Host host = null;

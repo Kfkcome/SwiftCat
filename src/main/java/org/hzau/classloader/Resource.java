@@ -1,10 +1,3 @@
-//package com.itranswarp.SwiftCat.classloader;
-//
-//import java.nio.file.Path;
-//
-//public record Resource(Path path, String name) {
-//
-//}
 package org.hzau.classloader;
 
 import java.nio.file.Path;
@@ -42,9 +35,6 @@ public class Resource {
 
     @Override
     public String toString() {
-        return "Resource{" +
-                "path=" + path +
-                ", name='" + name + '\'' +
-                '}';
+        return "Resource{" + "path=" + path + ", name='" + name + '\'' + '}';
     }
 }

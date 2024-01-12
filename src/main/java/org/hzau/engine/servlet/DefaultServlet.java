@@ -21,9 +21,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- * Default servlet is mapping on "/" and serves as file browsing.
- */
+
 public class DefaultServlet extends HttpServlet {
 
     final Logger logger = LoggerFactory.getLogger(getClass());

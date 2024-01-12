@@ -12,13 +12,7 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.lang.management.ManagementFactory;
 
-/**
- * 类功能描述：将 MBean 注册到 MBean 服务器中
- *
- * @author kfk
- * @date 2023/12/28
- * TODO:实现JMX注册
- */
+
 public class StandardRegistry {
     private Registry registry = null;
     private MBeanServer platformMBeanServer = null;

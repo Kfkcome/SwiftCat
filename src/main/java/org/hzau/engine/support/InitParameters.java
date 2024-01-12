@@ -8,19 +8,6 @@ public class InitParameters extends LazyMap<String> {
         super(false);
     }
 
-    /**
-     * Sets the initialization parameter with the given name and value on the
-     * Servlet or Filter that is represented by this Registration.
-     *
-     * @param name  the initialization parameter name
-     * @param value the initialization parameter value
-     *
-     * @return true if the update was successful, i.e., an initialization parameter
-     *         with the given name did not already exist for the Servlet or Filter
-     *         represented by this Registration, and false otherwise
-     *
-     * @throws IllegalArgumentException if the given name or value is <tt>null</tt>
-     */
     public boolean setInitParameter(String name, String value) {
         if (name == null || name.isEmpty()) {
             throw new IllegalArgumentException("Name is null or empty.");
