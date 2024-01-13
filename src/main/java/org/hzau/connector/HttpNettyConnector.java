@@ -25,15 +25,15 @@ public class HttpNettyConnector {
     Config config;
     Executor executor;
     Map<String, List<Class<?>>> autoScannedClasses;
-    Map<String,ClassLoader> loaderMap;
+    Map<String, ClassLoader> loaderMap;
     final List<NormalContext> servletContext = new ArrayList<>();
 
-    public HttpNettyConnector(Config config, Executor executor, Map<String, List<Class<?>>> autoScannedClasses,Map<String,ClassLoader> loaderMap) {
+    public HttpNettyConnector(Config config, Executor executor, Map<String, List<Class<?>>> autoScannedClasses, Map<String, ClassLoader> loaderMap) {
         this.config = config;
         this.port = config.server.port;
         this.executor = executor;
         this.autoScannedClasses = autoScannedClasses;
-        this.loaderMap=loaderMap;
+        this.loaderMap = loaderMap;
     }
 
     public void run() {
@@ -60,16 +60,16 @@ public class HttpNettyConnector {
         //初始化context
         NormalContext ctx = null;
         List<Config.Server.Context> contexts = config.server.contexts;
-        List<Class<?>> classes=null;
-        ClassLoader classLoader=null;
+        List<Class<?>> classes = null;
+        ClassLoader classLoader = null;
         for (Config.Server.Context context : contexts) {
             try {
                 classes = autoScannedClasses.get(context.docBase);
-                classLoader=loaderMap.get(context.docBase);
-                if(classes==null||classLoader==null){
+                classLoader = loaderMap.get(context.docBase);
+                if (classes == null || classLoader == null) {
                     continue;
                 }
-                ctx = new NormalContext(context.name, context.path, context.fileListings, context.virtualServerName, context.sessionCookieName, context.sessionTimeout, classLoader, config, context.docBase, classes);
+                ctx = new NormalContext(contexts.indexOf(context), context.name, context.path, context.fileListings, context.virtualServerName, context.sessionCookieName, context.sessionTimeout, classLoader, config, context.docBase, classes);
                 ctx.init();//TODO:为什么初始化的时候就注册servlet
                 ctx.start();
                 this.servletContext.add(ctx);
@@ -78,7 +78,7 @@ public class HttpNettyConnector {
             }
 
         }
-        bootstrap.childHandler(new ServerIniterHandler(servletContext,config));
+        bootstrap.childHandler(new ServerIniterHandler(servletContext, config));
         //BACKLOG用于构造服务端套接字ServerSocket对象，
         // 标识当服务器请求处理线程全满时，用于临时存放已完成三次握手的请求的队列的最大长度
         bootstrap.option(ChannelOption.SO_BACKLOG, 1024);

@@ -80,7 +80,8 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         //获取resquest和response后开始处理
         for (NormalContext context1 : request.mappingData.contexts) {
             //处理默认的
-            if (request.mappingData.requestPath.split("/").length == 1 && context1.getContextPath().equals("/")) {
+            //FIXME:彻底修复默认的servlet无法匹配的问题
+            if (request.mappingData.requestPath.split("/").length == 0) {
                 request.mappingData.context = context1;
                 break;
             }

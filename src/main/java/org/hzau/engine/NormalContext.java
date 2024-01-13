@@ -44,6 +44,7 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
 
     final ClassLoader classLoader;
     final Config config;
+    int configIndex = 0;
     // web root dir:
     final Path webRoot;
     // session manager:
@@ -74,9 +75,10 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
     private List<HttpSessionAttributeListener> httpSessionAttributeListeners = null;
     private List<HttpSessionListener> httpSessionListeners = null;
 
-    public NormalContext(String name,String path ,boolean fileListings, String virtualServerName, String sessionCookieName, Integer sessionTimeout, ClassLoader classLoader, Config config, String webRoot, List<Class<?>> autoScannedClasses) throws LifecycleException {
+    public NormalContext(int configIndex, String name, String path, boolean fileListings, String virtualServerName, String sessionCookieName, Integer sessionTimeout, ClassLoader classLoader, Config config, String webRoot, List<Class<?>> autoScannedClasses) throws LifecycleException {
+        this.configIndex = configIndex;
         this.name = name;
-        this.path=path;
+        this.path = path;
         this.fileListings = fileListings;
         this.virtualServerName = virtualServerName;
         this.sessionCookieName = sessionCookieName;
@@ -85,7 +87,7 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
         this.classLoader = classLoader;
         this.config = config;
         this.sessionCookieConfig = new SessionCookieConfigImpl(config);
-        this.webRoot = Paths.get(webRoot).normalize().toAbsolutePath();
+        this.webRoot = Paths.get(".\\webapps\\"+webRoot).normalize().toAbsolutePath();
         this.autoScannedClasses = autoScannedClasses;
         this.sessionManager = new SessionManager(this, config.server.contexts.get(0).sessionTimeout);
         logger.info("set web root: {}", this.webRoot);
@@ -99,7 +101,7 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
         Servlet servlet = this.defaultServlet;
         if (!"/".equals(path)) {
             for (ServletMapping mapping : this.servletMappings) {
-                if (mapping.matches("/"+path.split("/")[2])) {//TODO:应该在MappingData中就匹配好
+                if (mapping.matches("/" + path.split("/")[2])) {//TODO:应该在MappingData中就匹配好
                     servlet = mapping.servlet;
                     break;
                 }
@@ -373,7 +375,7 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
         }
         Path loc = this.webRoot.resolve(path).normalize();
         if (loc.startsWith(this.webRoot)) {
-            return loc.toString();
+            return loc.toString().split("\\.")[0];
         }
         return null;
     }
@@ -454,7 +456,7 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
 
     @Override
     public String getServletContextName() {
-        return this.config.server.contexts.get(0).name;
+        return this.config.server.contexts.get(configIndex).name;
     }
 
     @Override
@@ -743,18 +745,18 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
 
     @Override
     public String getVirtualServerName() {
-        return this.config.server.contexts.get(0).virtualServerName;
+        return this.config.server.contexts.get(configIndex).virtualServerName;
     }
 
     @Override
     public int getSessionTimeout() {
-        return this.config.server.contexts.get(0).sessionTimeout;
+        return this.config.server.contexts.get(configIndex).sessionTimeout;
     }
 
     @Override
     public void setSessionTimeout(int sessionTimeout) {
         checkNotInitialized("setSessionTimeout");
-        this.config.server.contexts.get(0).sessionTimeout = sessionTimeout;
+        this.config.server.contexts.get(configIndex).sessionTimeout = sessionTimeout;
     }
 
     @Override
@@ -850,7 +852,7 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
         // init servlets while find default servlet:
         Servlet defaultServlet = null;
         for (String name : this.servletRegistrations.keySet()) {
-            var registration = this.servletRegistrations.get(name);
+            ServletRegistrationImpl registration = this.servletRegistrations.get(name);
             try {
                 registration.servlet.init(registration.getServletConfig());
                 this.nameToServlets.put(name, registration.servlet);
@@ -872,7 +874,7 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
         }
         //TODO:应该单独给DefaultServlet设置一个Context
         //FIXME:修复DefaultServlet不能使用
-        if (defaultServlet == null && config.server.contexts.get(0).fileListings) {
+        if (defaultServlet == null && config.server.contexts.get(configIndex).fileListings) {
             logger.info("no default servlet. auto register {}...", DefaultServlet.class.getName());
             defaultServlet = new DefaultServlet();
             try {
@@ -933,7 +935,7 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
 
     @Override
     protected void stopInternal() throws LifecycleException {
-            //TODO:完成stop 也就是stop后再start还可以正常运行
+        //TODO:完成stop 也就是stop后再start还可以正常运行
     }
 
 
@@ -996,6 +998,6 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
     @Override
     protected String getObjectNameKeyProperties() {
         //TODO:如何设计ObjectName？
-        return "type=Context,name=" + this.config.server.contexts.get(0).name + ",host=" + this.config.server.contexts.get(0).virtualServerName + ",version=1.0.0";
+        return "type=Context,name=" + this.config.server.contexts.get(configIndex).name + ",host=" + this.config.server.contexts.get(configIndex).virtualServerName + ",version=1.0.0";
     }
 }
