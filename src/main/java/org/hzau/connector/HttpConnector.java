@@ -42,7 +42,7 @@ public class HttpConnector implements HttpHandler, AutoCloseable {
         List<Config.Server.Context> contexts = config.server.contexts;
         for (Config.Server.Context context : contexts) {
             try {
-                ctx = new NormalContext(context.name, context.path, context.fileListings, context.virtualServerName, context.sessionCookieName, context.sessionTimeout, classLoader, config, webRoot, autoScannedClasses);
+                ctx = new NormalContext(contexts.indexOf(context),context.name, context.path, context.fileListings, context.virtualServerName, context.sessionCookieName, context.sessionTimeout, classLoader, config, webRoot, autoScannedClasses);
 
                 ctx.init();//TODO:为什么初始化的时候就注册servlet
                 ctx.start();
