@@ -991,13 +991,13 @@ public class NormalContext extends LifecycleMBeanBase implements ServletContext 
 
     @Override
     protected String getDomainInternal() {
-        //TODO:domain应该是什么？
+
         return "Engine";
     }
 
     @Override
     protected String getObjectNameKeyProperties() {
-        //TODO:如何设计ObjectName？
+
         return "type=Context,name=" + this.config.server.contexts.get(configIndex).name + ",host=" + this.config.server.contexts.get(configIndex).virtualServerName + ",version=1.0.0";
     }
 }

@@ -1,13 +1,15 @@
 package org.hzau.engine;
 
+
 import jakarta.servlet.http.HttpSession;
 import org.hzau.utils.DateUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Comparator;
 import java.util.Map;
+import java.util.PriorityQueue;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.PriorityBlockingQueue;
 
 public class SessionManager implements Runnable {
 
@@ -15,7 +17,8 @@ public class SessionManager implements Runnable {
 
     final NormalContext servletContext;
     final Map<String, HttpSessionImpl> sessions = new ConcurrentHashMap<>();
-    final PriorityBlockingQueue<HttpSessionImpl> sessionQueue = new PriorityBlockingQueue<>();
+    final PriorityQueue<HttpSessionImpl> sessionQueue = new PriorityQueue<>(
+            Comparator.comparingLong(HttpSessionImpl::getLastAccessedTime));
     final int inactiveInterval;
 
     public SessionManager(NormalContext servletContext, int interval) {
@@ -31,11 +34,12 @@ public class SessionManager implements Runnable {
         if (session == null) {
             session = new HttpSessionImpl(this.servletContext, sessionId, inactiveInterval);
             sessions.put(sessionId, session);
+            // 添加到队列中
             sessionQueue.add(session);
             this.servletContext.invokeHttpSessionCreated(session);
         } else {
             session.lastAccessedTime = System.currentTimeMillis();
-            // Re-order the session in the queue based on the last accessed time
+            // 更新队列
             sessionQueue.remove(session);
             sessionQueue.add(session);
         }
@@ -43,9 +47,7 @@ public class SessionManager implements Runnable {
     }
 
     public void remove(HttpSession session) {
-        HttpSessionImpl sessionImpl = (HttpSessionImpl) session;
         this.sessions.remove(session.getId());
-        this.sessionQueue.remove(sessionImpl);
         this.servletContext.invokeHttpSessionDestroyed(session);
     }
 
@@ -55,13 +57,11 @@ public class SessionManager implements Runnable {
             try {
                 Thread.sleep(60_000L);
                 long now = System.currentTimeMillis();
-                while (!sessionQueue.isEmpty() && sessionQueue.peek().getLastAccessedTime() + inactiveInterval * 1000L < now) {
+                while (!sessionQueue.isEmpty() &&
+                        sessionQueue.peek().getLastAccessedTime() + inactiveInterval * 1000L < now) {
                     HttpSessionImpl session = sessionQueue.poll();
-                    if (session != null) {
-                        logger.atDebug().log("remove expired session: {}, last access time: {}", session.getId(),
-                                DateUtils.formatDateTimeGMT(session.getLastAccessedTime()));
-                        session.invalidate();
-                    }
+                    sessions.remove(session.getId());
+                    // 其他清理逻辑...
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -69,3 +69,4 @@ public class SessionManager implements Runnable {
         }
     }
 }
+
